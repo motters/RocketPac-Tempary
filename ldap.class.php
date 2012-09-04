@@ -1,21 +1,21 @@
 <?php
 /*
- *This class lets you connect to a LDAP system and retrive users information. It also lets you auth via LDAP
- *@Author Sam Mottley
- *EXAMPLE USEAGE
- *	//Start The ldap Class		
- *	$LDAP = new ldap();
- *	
- *	//Here we set the private settings
- *  $LDAP->writeSettings(array('host'=>'directory.example.co.uk', 'baseDn'=>'o=Your Company,c=GB', 'port'=>'PORTNUMBER', 'customErrorMessages' =>array('errorLdapSearch'=>'Custome error message here', 'errorIncorrectPassword'=>'Another custome error message here')));
- *	
- *	//Here we get a users details in an array
- *	$GetDetails = $LDAP->ldapUserToArray('uid=username');
- *	print_r($GetDetails);
- *	
- *	//Here we will check the login detils
- *	$CheckAuth = $LDAP->ldapAuthenticate('username', 'password');
- *	print_r($CheckAuth);
+ * This class lets you connect to a LDAP system and retrive users information. It also lets you auth via LDAP
+ * @Author Sam Mottley
+ * EXAMPLE USEAGE
+ * //Start The ldap Class		
+ * $LDAP = new ldap();
+ *
+ * //Here we set the private settings
+ * $LDAP->writeSettings(array('host'=>'directory.example.co.uk', 'baseDn'=>'o=Your Company,c=GB', 'port'=>'PORTNUMBER', 'customErrorMessages' =>array('errorLdapSearch'=>'Custome error message here', 'errorIncorrectPassword'=>'Another custome error message here')));
+ *
+ * //Here we get a users details in an array
+ * $GetDetails = $LDAP->ldapUserToArray('username', 'uid', NULL);//null does not have to be there but there to show you can add a filter to your returned array
+ * print_r($GetDetails);
+ *
+ * //Here we will check the login detils
+ * $CheckAuth = $LDAP->ldapAuthenticate('username', 'password');
+ * print_r($CheckAuth);
  */
 
 class ldap {
@@ -199,19 +199,5 @@ class ldap {
 	
 	
 }
-/*
-//Start The ldap Class		
-$LDAP = new ldap();
 
-//Here we set the private settings
-$LDAP->writeSettings(array('host'=>'directory.example.co.uk', 'baseDn'=>'o=Your Company,c=GB', 'port'=>'PORTNUMBER', 'customErrorMessages' =>array('errorLdapSearch'=>'Custome error message here', 'errorIncorrectPassword'=>'Another custome error message here')));
-
-//Here we get a users details in an array
-$GetDetails = $LDAP->ldapUserToArray('username', 'uid', NULL);//null does not have to be there but there to show you can add a filter to your returned array
-print_r($GetDetails);
-
-//Here we will check the login detils
-$CheckAuth = $LDAP->ldapAuthenticate('username', 'password');
-print_r($CheckAuth);
-*/
 ?>
