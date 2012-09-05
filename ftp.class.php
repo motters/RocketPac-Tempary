@@ -259,7 +259,7 @@ class ftp extends rocketpack {
         }
     }
 
-    /* Connect to ftp 
+    /* list files in current ftp directory 
      * @Author Sam Mottley
      */
 
@@ -384,7 +384,7 @@ class ftp extends rocketpack {
         }
     }
 
-    /* Get the current sixe of the file
+    /* Get the current size of the file
      * @Author Sam Mottley
      */
 
@@ -415,12 +415,47 @@ class ftp extends rocketpack {
             return false;
         }
     }
-
-    /* Get the file type Asccii or Binart NOTE: BETA stage
-     * @Author Sam Mottley
-     * UNTESTED
-     */
-
+    //DEVELOPING
+    public function renameItem($itemNewName, $itemOldName){
+        $pathInfoOldName = pathinfo($itemOldName);
+        $pathInfoNewName = pathinfo($itemNewName);
+        
+        if ((strstr($itemOldName, '/'))&&($itemOldName['extension'] != '')) {
+            $currentLocation = $this->currentDirectory();
+            if ($this->setCurrentDirectory($pathInfoOldName['dirname'])) {
+                //Attempt to chmod file
+                $ftpChmod = ftp_rename($this->storeConnection, $pathInfoNewName['basename'], $pathInfoOldName['basename']);
+            }
+            $this->setCurrentDirectory($currentLocation);
+        } else {
+            //Attempt to rename  file
+            $ftpChmod = ftp_rename($this->storeConnection, $itemOldName, $itemNewName);
+        }
+        
+    }
+    //DEVELOPING 
+    public function moveFolder($currentLocation, $newLocation){
+        $pathInfoOldName = pathinfo($itemOldName);
+        $pathInfoNewName = pathinfo($itemNewName);
+        
+        if ((strstr($currentLocation, '/'))&&($itemOldName['extension'] == '')) {
+            $moveFolder = ftp_rename($this->storeConnection, currentLocation, $newLocation);
+        }else{
+            //ERROR HERE
+        }
+    }
+    
+    //DEVELOPING
+    public function rawFtp($command){
+        return ftp_raw($this->storeConnection, $command);
+    }
+    
+    //DEVELOPING
+    public function ftp_exec($command){
+        return ftp_exec($this->storeConnection, $command);
+    }
+    
+    //DEVELOPING
     public function isAscii($file) {
         if (PHP_VERSION_ID < 6000) {
             //In php version less than 6 we do not have a function to tell if it's binary or not.
