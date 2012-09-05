@@ -13,7 +13,8 @@
   'authType'=>'login',
   'username'=>'ftpclass',
   'password'=>'password',
-  'port'=>'21',
+  'port'=>'22',
+  'protocol '=>'ftp',
   'passiveMode'=>'1'));
 
   #############################################################
@@ -58,7 +59,7 @@ class ftp extends rocketpack {
      * @Types ftp, ssl, sftp
      */
     private $protocol = 'fpt';
-    
+
     /* Set the Auth type anonymous OR login
      * @Author Sam Mottley
      */
@@ -150,45 +151,6 @@ class ftp extends rocketpack {
         }
     }
     
-    /*Connect via SFTP and uses its own php functions
-     * @Author Sam Mottley
-     */
-    public function sftpConnect(){
-        if(function_exists('ssh2_connect')){
-            // set up basic ssl connection
-            $this->storeConnection = ssh2_connect($this->host, $this->port);
-            
-            if ($this->storeConnection) {
-                // login with username and password
-                if ($this->authType == 'anonymous') {
-                    //Here we login via a anonymous auth
-                    $stausLogin = ssh2_auth_none($this->storeConnection, 'anonymous', '');
-                } else {
-                    //Here we login with the username and password
-                    $stausLogin = ssh2_auth_password($this->storeConnection, $this->username, $this->password);
-                }
-            }
-            //ssh2_sftp
-            //Here we check that they login successully
-            if ($stausLogin) {
-                if (ssh2_sftp($this->storeConnection, $this->passiveMode)) {
-                    $this->definePHPVersion();
-                    return true;
-                } else {
-                    notification::StoreWarning($this->ErrorMessages['errorFtpMode']);
-                    return false;
-                }
-            } else {
-                notification::StoreWarning($this->ErrorMessages['errorAuth']);
-                return false;
-            }
-            $this->writeToVar('protocol', 'sftp');
-        }else{
-            $this->sslConnect();
-            $this->writeToVar('protocol', 'ssl');
-        }
-    }
-    
     /*Connect via SSL and uses standard ftp functions
      * @Author Sam Mottley
      */
@@ -276,10 +238,7 @@ class ftp extends rocketpack {
      * @Author Sam Mottley
      */
 
-    public function makeDirectory($makeDirectory) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
+    public function makeDirectory($makeDirectory, $permissions='0644') {
             //here we will try and create a directory
             if (ftp_mkdir($this->storeConnection, $makeDirectory)) {
                 return true;
@@ -287,7 +246,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory, $this->ErrorMessages['errorCreateStructure']));
                 return false;
             }
-        }
     }
 
     /* Change you position in the ftp folder structure
@@ -295,9 +253,7 @@ class ftp extends rocketpack {
      */
 
     public function setCurrentDirectory($location) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
+
             //Here we are going to chnage the current directory
             if (ftp_chdir($this->storeConnection, $location)) {
                 return true;
@@ -305,7 +261,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{Location}', $location, $this->ErrorMessages['errorChangeDirectory']));
                 return false;
             }
-        }
     }
 
     /* Connect to ftp 
@@ -313,16 +268,12 @@ class ftp extends rocketpack {
      */
 
     public function listFilesInDirectory($directory='.', $additionPrams = '-la') {
-        if($this->protocol == 'sftp'){
-            
-        }else{
             $fileArray = ftp_nlist($this->storeConnection, $additionPrams . ' ' . $directory);
             if ($fileArray) {
                 return $fileArray;
             } else {
                 return false;
             }
-        }
     }
 
     /* Delete a file NOT a folder
@@ -330,9 +281,6 @@ class ftp extends rocketpack {
      */
 
     public function deleteFile($file) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
             //Attempt to delete file
             $ftpDelete = ftp_delete($this->storeConnection, $file);
 
@@ -343,7 +291,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{file}', $file, $this->ErrorMessages['errorDeleteFile']));
                 return false;
             }
-        }
     }
 
     /* Delete a folder with **no** content in it
@@ -351,9 +298,6 @@ class ftp extends rocketpack {
      */
 
     public function deleteEmptyFolder($folder) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
             //Attempt to delete Folder
             $ftpDelete = ftp_rmdir($this->storeConnection, $folder);
 
@@ -364,7 +308,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{folder}', $folder, $this->ErrorMessages['errorDeleteFolder']));
                 return false;
             }
-        }
     }
 
     /* Chmod item give it any path and it will handle it and return you to you past position 
@@ -372,9 +315,6 @@ class ftp extends rocketpack {
      */
 
     public function chmodItem($file, $permissions) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
             //Make sire we are in the correct directory
             if (strstr($file, '/')) {
                 $pathInfo = pathinfo($file);
@@ -395,7 +335,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{file}', $file, str_replace('{permissions}', $permissions, $this->ErrorMessages['errorChmod'])));
                 return false;
             }
-        }
     }
 
     /* Returns the OS platform
@@ -403,10 +342,7 @@ class ftp extends rocketpack {
      */
 
     public function sysType() {
-        if($this->protocol == 'sftp'){
-            
-        }else{
-            //Attempt to find system type
+        //Attempt to find system type
             $systemType = ftp_systype($this->storeConnection);
 
             //Check if apptempt was successfull
@@ -416,7 +352,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning($this->ErrorMessages['errorSystemType']);
                 return false;
             }
-        }
     }
 
     /* Returns the current directory you are in
@@ -424,9 +359,6 @@ class ftp extends rocketpack {
      */
 
     public function currentDirectory() {
-        if($this->protocol == 'sftp'){
-            
-        }else{
             //Attempt to find current directory
             $currentDirectory = ftp_pwd($this->storeConnection);
 
@@ -437,7 +369,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning($this->ErrorMessages['errorCurrentDirectory']);
                 return false;
             }
-        }
     }
 
     /* Move your position to the above direction
@@ -445,10 +376,7 @@ class ftp extends rocketpack {
      */
 
     public function parentDirectory() {
-        if($this->protocol == 'sftp'){
-            
-        }else{
-            //Attempt to go to parent directory
+        //Attempt to go to parent directory
             $parentDirectory = ftp_cdup($this->storeConnection);
 
             //Check if apptempt was successfull
@@ -458,7 +386,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning($this->ErrorMessages['errorParentDirectory']);
                 return false;
             }
-        }
     }
 
     /* Get the current sixe of the file
@@ -466,10 +393,7 @@ class ftp extends rocketpack {
      */
 
     public function getFileSize($file) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
-            //Attempt to get file size
+        //Attempt to get file size
             $getFileSize = ftp_size($this->storeConnection, $file);
 
             //Check if apptempt was successfull
@@ -479,7 +403,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{file}', $file, $this->ErrorMessages['errorFileSize']));
                 return false;
             }
-        }
     }
 
     /* Find when the file was last altered NOTE:Wont work on all servers!
@@ -487,10 +410,7 @@ class ftp extends rocketpack {
      */
 
     public function lastModified($file) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
-            $lastModified = ftp_mdtm($this->storeConnection, $file);
+           $lastModified = ftp_mdtm($this->storeConnection, $file);
 
             if ($lastModified) {
                 return $lastModified;
@@ -498,7 +418,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{file}', $file, $this->ErrorMessages['errorModifiedDate']));
                 return false;
             }
-        }
     }
 
     /* Get the file type Asccii or Binart NOTE: BETA stage
@@ -532,10 +451,7 @@ class ftp extends rocketpack {
      */
 
     public function uploadFileContentToExsistingFile($fileLocation, $fileServer, $transferMode=FTP_BINARY) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
-            //Here we upload the file
+        //Here we upload the file
             $uploadFile = ftp_put($this->storeConnection, $fileServer, $fileLocation, $transferMode);
 
             //here we check the file has been uploaded
@@ -545,7 +461,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{transferMode}', $transferMode, str_replace('{fileServer}', $fileServer, str_replace('{fileLocation}', $fileLocation, $this->ErrorMessages['errorUploadFileContent']))));
                 return false;
             }
-        }
     }
 
     /* Upload a file
@@ -555,10 +470,7 @@ class ftp extends rocketpack {
      */
 
     public function uploadFile($fileLocation, $fileServer, $transferMode=FTP_BINARY) {
-        if($this->protocol == 'sftp'){
-            
-        }else{
-            //Here we set the CURRENT directory
+        //Here we set the CURRENT directory
             $currentLocation = $this->currentDirectory();
 
             //set the new directory relivent to root
@@ -578,7 +490,6 @@ class ftp extends rocketpack {
                 notification::StoreWarning(str_replace('{transferMode}', $transferMode, str_replace('{fileServer}', $fileServer, str_replace('{fileLocation}', $fileLocation, $this->ErrorMessages['errorUpdateFile']))));
                 return false;
             }
-        }
     }
 
     /* download a file
@@ -588,9 +499,6 @@ class ftp extends rocketpack {
      */
 
     public function retrieveFile($fileLocation, $fileServer, $transferMode = 'FTP_BINARY') {
-        if($this->protocol == 'sftp'){
-            
-        }else{
             //File pointer
             $filePointer = fopen($fileLocation, 'w');
 
@@ -609,7 +517,6 @@ class ftp extends rocketpack {
                 return false;
             }
         }
-    }
 
 }
 
