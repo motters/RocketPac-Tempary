@@ -11,7 +11,7 @@
   #############################################################
   $settings = $ftp->writeSettings(array('host'=>'example.co.uk',
   'authType'=>'login',
-  'username'=>'ftpclass',
+  'username'=>'username',
   'password'=>'password',
   'port'=>'21',
   'protocol '=>'ftp',
@@ -25,22 +25,40 @@
   ############################################################
   #Examples of each command is below
   #############################################################
-  //$makeDirectory = $ftp->makeDirectory('test2');
-  //$listFiles = $ftp->listFilesInDirectory('testdirectory/test/test/');
-  //$deleteFile = $ftp->ftpDeleteFile('test2/controller.ext.php');
-  //$deleteFolder = $ftp->ftpDeleteEmptyFolder('test2');
-  //$chmodFile = $ftp->ftpChmodFile('test2/packages.txt', 0644);
-  //$sysType = $ftp->sysType();
-  //$currentDirectory = $ftp->currentDirectory();
-  //$parentDirectory = $ftp->parentDirectory();
-  //$getFileSize = $ftp->getFileSize('module.xml');
-  //$lastModified = $ftp->lastModified('module.xml');
-  //$uploadFileContentToExsistingFile = $ftp->uploadFileContentToFile('test.html', 'test1.html');
-  //$uploadFile = $ftp->uploadFile('test.html', 'test1.html');
-  //$uploadFile = $ftp->uploadFile('test.html', 'test.html'); retrieveFile
-  //$currentDirectory2 = $ftp->setCurrentDirectory('test/test/');
-  //$uploadFile = $ftp->uploadFile('robots.txt', 'test/robots.txt');
-  //$downloadFile = $ftp->retrieveFile('public/robots.txt', 'test/robots.txt');
+  //Make a directoy
+  $makeDirectory = $ftp->makeDirectory('dir/dir2/dir/dir8', $permissions = '0644', $recursive = TRUE);
+  //Rename and have the option to move an item
+  $renameAndMoveItem = $ftp->renameAndMoveItem('dir/dir2/dir/dir8/index.php', 'dir/dir2/dir/dir8/index5.php');
+  //Rename and have the option to move an folder with its contents
+  $moveFolder = $ftp->renameAndMoveFolder('dir/dir2/dir/dir8', 'dir/dir2/dir2/dir8');
+  //Check for a file or folder on the ftp server       Item name, Item location
+  $there = $ftp->checkItemPresent('index.php', 'dir/dir2/dir/dir8');
+  //List all the files in the directory
+  $listFiles = $ftp->listFilesInDirectory('.');
+  //Delete a file
+  $deleteFile = $ftp->ftpDeleteFile('dir/testFile.ext.php');
+  //Delete an empty folder
+  $deleteFolder = $ftp->ftpDeleteEmptyFolder('dir/dir2/dir/dir8');
+  //Chmod File or folder
+  $chmodFile = $ftp->ftpChmodFile('dir/dir2/dir/dir8/packages.txt', 0644);
+  //Get the systems OS
+  $sysType = $ftp->sysType();
+  //Get the current directory you ar in
+  $currentDirectory = $ftp->currentDirectory();
+  //Go up to parent directory of th directory you are in
+  $parentDirectory = $ftp->parentDirectory();
+  //Get the files size
+  $getFileSize = $ftp->getFileSize('module.xml');
+  //Find out when file was last modified
+  $lastModified = $ftp->lastModified('module.xml');
+  //Upload file content and update a current file on the server      file Location WEB SERVER, file ftp Server, transferMode
+  $uploadFileContentToExsistingFile = $ftp->uploadFileContentToFile('test.html', 'test1.html');
+  //upload file from WEB server to FTP server as a new file or over write the one on th web server      file Location WEB SERVER, file ftp Server, transferMode
+  $uploadFile = $ftp->uploadFile('test.html', 'test.html');
+  //Set which directory you want to be in
+  $currentDirectory2 = $ftp->setCurrentDirectory('dir/dir2/');
+  //Download / Retrive file from FTP sevrer to WEB server      Where to download to, File location on FTP Server, Transferr mode
+  $downloadFile = $ftp->retrieveFile('public/robots.txt', 'test/robots.txt');
 
   ###############################################################
   #Simple returning a printed array from listFiles function
@@ -243,23 +261,23 @@ class ftp extends rocketpack {
             $currentLocation = $this->currentDirectory();
             $exlodePath = explode('/', $makeDirectory);
             $path = '';
-            foreach($exlodePath as $number => $folderName){
-                $path .= '/' . $folderName; 
+            foreach ($exlodePath as $number => $folderName) {
+                $path .= '/' . $folderName;
                 if (@$this->setCurrentDirectory($folderName) == false) {
                     if (ftp_mkdir($this->storeConnection, $path)) {
-                       $this->chmodItem($makeDirectory, $permissions);
+                        $this->chmodItem($makeDirectory, $permissions);
                     } else {
-                       $errorMakingDir = 1;
+                        $errorMakingDir = 1;
                     }
                 }
             }
-           
+
             $this->setCurrentDirectory($currentLocation);
-            
-            if($errorMakingDir == 1){
+
+            if ($errorMakingDir == 1) {
                 notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory, $this->ErrorMessages['errorCreateStructure']));
                 return false;
-            }else{
+            } else {
                 return true;
             }
         } else {
@@ -271,7 +289,6 @@ class ftp extends rocketpack {
                 return false;
             }
         }
-        
     }
 
     /* Change you position in the ftp folder structure
@@ -446,21 +463,22 @@ class ftp extends rocketpack {
             return false;
         }
     }
-    
-    /*Check that item does not already exsist
+
+    /* Check that item does not already exsist
      * @Author Sam Mottley
      */
-    public function checkItemPresent($item, $location){
-        
+
+    public function checkItemPresent($item, $location) {
+
         $items = $this->listFilesInDirectory($location, '');
-        
-        if(in_array($item,$items)){
+
+        if (in_array($item, $items)) {
             return true;
-        }else{
+        } else {
             return false;
         }
-        
     }
+
     /* Rename an item from one name to another and move it too :)
      * @Author Sam Mottley
      */
@@ -468,14 +486,14 @@ class ftp extends rocketpack {
     public function renameAndMoveItem($itemOldName, $itemNewName) {
         $pathInfoOldName = pathinfo($itemOldName);
         $pathInfoNewName = pathinfo($itemNewName);
-        
+
         //check to see were not going to over write an item!
-        if($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])){
+        if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
             //item already exsists
             notification::StoreWarning(str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem'])));
-        
+
             return false;
-        }else{
+        } else {
             if ((strstr($itemOldName, '/')) && ($itemOldName['extension'] != '')) {
                 $currentLocation = $this->currentDirectory();
                 if ($this->setCurrentDirectory($pathInfoOldName['dirname'])) {
@@ -509,15 +527,15 @@ class ftp extends rocketpack {
     public function renameAndMoveFolder($currentLocation, $newLocation) {
         $pathInfoOldName = pathinfo($currentLocation);
         $pathInfoNewName = pathinfo($newLocation);
-        
-        //check to see were not going to over write an item!
-        if($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])){
-             //item already exsists
-        }else{
-            if ((strstr($currentLocation, '/')) && (@$pathInfoOldName['extension'] == '')) {
-                    $moveFolder = ftp_rename($this->storeConnection, $currentLocation, $newLocation);
 
-                    return $moveFolder;
+        //check to see were not going to over write an item!
+        if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
+            //item already exsists
+        } else {
+            if ((strstr($currentLocation, '/')) && (@$pathInfoOldName['extension'] == '')) {
+                $moveFolder = ftp_rename($this->storeConnection, $currentLocation, $newLocation);
+
+                return $moveFolder;
             } else {
                 //ERROR HERE
                 notification::StoreWarning(str_replace('{newLocation}', $newLocation, str_replace('{currentLocation}', $currentLocation, $this->ErrorMessages['errorMoveFolder'])));
