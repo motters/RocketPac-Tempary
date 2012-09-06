@@ -155,16 +155,17 @@ class ftp extends rocketpack {
 
     /* Here we write a settings array set outside the class to the private settings varables  
      * @Author Sam Mottley
+	 *UNTESTED
      */
 
     public function writeSettings($settingsArray) {
-        $this->writeToVar('host', $settingsArray['host']);
-        $this->writeToVar('authType', $settingsArray['authType']);
-        $this->writeToVar('username', $settingsArray['username']);
-        $this->writeToVar('password', $settingsArray['password']);
-        $this->writeToVar('port', $settingsArray['port']);
-        $this->writeToVar('passiveMode', $settingsArray['passiveMode']);
-        $this->writeToVar('protocol', $settingsArray['protocol']);
+        if(array_key_exists($settingsArray,'host')){ $this->writeToVar('host', $settingsArray['host']);}
+        if(array_key_exists($settingsArray,'authType')){$this->writeToVar('authType', $settingsArray['authType']); }
+        if(array_key_exists($settingsArray,'username')){ $this->writeToVar('username', $settingsArray['username']); }
+        if(array_key_exists($settingsArray,'password')){ $this->writeToVar('password', $settingsArray['password']); }
+        if(array_key_exists($settingsArray,'port')){$this->writeToVar('port', $settingsArray['port']); }
+        if(array_key_exists($settingsArray,'passiveMode')){ $this->writeToVar('passiveMode', $settingsArray['passiveMode']); }
+        if(array_key_exists($settingsArray,'protocol')){$this->writeToVar('protocol', $settingsArray['protocol']); }
 
         if (!empty($settingsArray['customErrorMessages'])) {
             foreach ($settingsArray['customErrorMessages'] as $errorType => $customeMessage) {
@@ -253,42 +254,48 @@ class ftp extends rocketpack {
 
     /* Make directory 
      * @Author Sam Mottley
+	 *UNTESTED
      */
 
     public function makeDirectory($makeDirectory, $permissions = '0644', $recursive = TRUE) {
-        $errorMakingDir = 0;
-        if ($recursive == TRUE) {
-            $currentLocation = $this->currentDirectory();
-            $exlodePath = explode('/', $makeDirectory);
-            $path = '';
-            foreach ($exlodePath as $number => $folderName) {
-                $path .= '/' . $folderName;
-                if (@$this->setCurrentDirectory($folderName) == false) {
-                    if (ftp_mkdir($this->storeConnection, $path)) {
-                        $this->chmodItem($makeDirectory, $permissions);
-                    } else {
-                        $errorMakingDir = 1;
-                    }
-                }
-            }
-
-            $this->setCurrentDirectory($currentLocation);
-
-            if ($errorMakingDir == 1) {
-                notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory, $this->ErrorMessages['errorCreateStructure']));
-                return false;
-            } else {
-                return true;
-            }
-        } else {
-            if (ftp_mkdir($this->storeConnection, $makeDirectory)) {
-                $this->chmodItem($makeDirectory, $permissions);
-                return true;
-            } else {
-                notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory, $this->ErrorMessages['errorCreateStructure']));
-                return false;
-            }
-        }
+		$wasError = '';
+		if(!is_array($makeDirectory)){
+			$makeDirectory = array($makeDirectory);
+		}
+		foreach($makeDirectory as $directory){
+			$errorMakingDir = 0;
+			if ($recursive == TRUE) {
+				$currentLocation = $this->currentDirectory();
+				$exlodePath = explode('/', $directory);
+				$path = '';
+				foreach ($exlodePath as $number => $folderName) {
+					$path .= '/' . $folderName;
+					if (@$this->setCurrentDirectory($folderName) == false) {
+						if ($ftpCreate = ftp_mkdir($this->storeConnection, $path)) {
+							$this->chmodItem($directory, $permissions);
+						} else {
+							$wasError[] = $directory;
+						}
+					}
+				}
+	
+				$this->setCurrentDirectory($currentLocation);
+			} else {
+				if ($ftpCreate = ftp_mkdir($this->storeConnection, $directory)) {
+					$this->chmodItem($directory, $permissions);
+				} else {
+					$wasError[] = $directory;
+				}
+			}
+		}
+		
+		if($ftpCreate){
+			return true;
+		}else{
+			notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory, $this->ErrorMessages['errorCreateStructure']));
+			return false;
+		}
+		
     }
 
     /* Change you position in the ftp folder structure
@@ -315,68 +322,132 @@ class ftp extends rocketpack {
         if ($fileArray) {
             return $fileArray;
         } else {
+			$errorSting = '';
+			foreach($wasError as $fileError){
+				$errorSting .= $fileError . 'and';	
+			}
             return false;
         }
     }
 
     /* Delete a file NOT a folder
      * @Author Sam Mottley
+	 * UNTESTED
      */
 
     public function deleteFile($file) {
-        //Attempt to delete file
-        $ftpDelete = ftp_delete($this->storeConnection, $file);
-
+		$wasError = '';
+		if(!is_array($file)){
+			$file = array($file);
+		}
+		foreach($file as $singleFile){
+			if (strstr($singleFile, '/')) {
+				$pathInfo = pathinfo($singleFile);
+				$currentLocation = $this->currentDirectory();
+				if ($this->setCurrentDirectory($pathInfo['dirname'])) {
+					//Attempt to delete file
+					$ftpDelete = ftp_delete($this->storeConnection, $pathInfo['basename']);
+					 if (!$ftpDelete) {
+					 	$wasError[] = $singleFile;
+					 }
+						
+				}
+			}else{
+				//Attempt to delete file
+				$ftpDelete = ftp_delete($this->storeConnection, $singleFile);	
+				if (!$ftpDelete) {
+					 	$wasError[] = $singleFile;
+				}
+			}
+		}
         //Check if apptempt was successfull
         if ($ftpDelete) {
             return true;
         } else {
-            notification::StoreWarning(str_replace('{file}', $file, $this->ErrorMessages['errorDeleteFile']));
+			$errorSting = '';
+			foreach($wasError as $fileError){
+				$errorSting .= $fileError . 'and';	
+			}
+            notification::StoreWarning(str_replace('{file}', $errorSting, $this->ErrorMessages['errorDeleteFile']));
             return false;
         }
     }
 
     /* Delete a folder with **no** content in it
      * @Author Sam Mottley
+	 *UNTESTED
      */
 
     public function deleteEmptyFolder($folder) {
-        //Attempt to delete Folder
-        $ftpDelete = ftp_rmdir($this->storeConnection, $folder);
-
+		$wasError = '';
+		if(!is_array($folder)){
+			$folder = array($folder);
+		}
+		foreach($folder as $singleFolder){
+        	//Attempt to delete Folder
+        	$ftpDelete = ftp_rmdir($this->storeConnection, $singleFolder);
+			
+			if (!$ftpDelete) {
+				$wasError[] = $singleFolder;
+			}
+		}
         //Check if apptempt was successfull
         if ($ftpDelete) {
             return true;
         } else {
-            notification::StoreWarning(str_replace('{folder}', $folder, $this->ErrorMessages['errorDeleteFolder']));
+			$errorSting = '';
+			foreach($wasError as $fileError){
+				$errorSting .= $fileError . 'and';	
+			}
+			
+            notification::StoreWarning(str_replace('{folder}', $errorSting, $this->ErrorMessages['errorDeleteFolder']));
             return false;
         }
     }
 
     /* Chmod item give it any path and it will handle it and return you to you past position 
      * @Author Sam Mottley
+	 * UNTESTED
      */
 
     public function chmodItem($file, $permissions) {
-        $ftpChmod = '';
-        //Make sire we are in the correct directory
-        if (strstr($file, '/')) {
-            $pathInfo = pathinfo($file);
-            $currentLocation = $this->currentDirectory();
-            if ($this->setCurrentDirectory($pathInfo['dirname'])) {
-                //Attempt to chmod file
-                $ftpChmod = ftp_chmod($this->storeConnection, $permissions, $pathInfo['basename']);
-            }
-            $this->setCurrentDirectory($currentLocation);
-        } else {
-            //Attempt to chmod file
-            $ftpChmod = ftp_chmod($this->storeConnection, $permissions, $file);
-        }
+       $wasError = '';
+		if(!is_array($file)){
+			$file = array($file);
+		}
+		foreach($file as $singlefile){
+			$ftpChmod = '';
+			//Make sire we are in the correct directory
+			if (strstr($singlefile, '/')) {
+				$pathInfo = pathinfo($singlefile);
+				$currentLocation = $this->currentDirectory();
+				if ($this->setCurrentDirectory($pathInfo['dirname'])) {
+					//Attempt to chmod file
+					$ftpChmod = ftp_chmod($this->storeConnection, $permissions, $pathInfo['basename']);
+					
+					if (!$ftpChmod) {
+						$wasError[] = $singlefile;
+					}
+				}
+				$this->setCurrentDirectory($currentLocation);
+			} else {
+				//Attempt to chmod file
+				$ftpChmod = ftp_chmod($this->storeConnection, $permissions, $singlefile);
+				if (!$ftpChmod) {
+					$wasError[] = $singlefile;
+				}
+			}
+		}
         //Check if apptempt was successfull
         if ($ftpChmod) {
             return true;
         } else {
-            notification::StoreWarning(str_replace('{file}', $file, str_replace('{permissions}', $permissions, $this->ErrorMessages['errorChmod'])));
+			$errorSting = '';
+			foreach($wasError as $fileError){
+				$errorSting .= $fileError . 'and';	
+			}
+			
+            notification::StoreWarning(str_replace('{file}', $errorSting, str_replace('{permissions}', $permissions, $this->ErrorMessages['errorChmod'])));
             return false;
         }
     }
@@ -434,17 +505,31 @@ class ftp extends rocketpack {
 
     /* Get the current size of the file
      * @Author Sam Mottley
+	 * UNTESTED
      */
 
     public function getFileSize($file) {
-        //Attempt to get file size
-        $getFileSize = ftp_size($this->storeConnection, $file);
-
+		$wasError = '';
+		if(!is_array($file)){
+			$file = array($file);
+		}
+		foreach($file as $singlefile){
+        	//Attempt to get file size
+        	$getFileSize[$singlefile] = ftp_size($this->storeConnection, $singlefile);
+			if (!$getFileSize[$singlefile]) {
+				$wasError[] = $singlefile;
+			}
+		}
         //Check if apptempt was successfull
-        if ($getFileSize) {
+        if (!in_array(false, $getFileSize)) {
             return $getFileSize;
         } else {
-            notification::StoreWarning(str_replace('{file}', $file, $this->ErrorMessages['errorFileSize']));
+			foreach($getFileSize as $fileLocation => $status){
+				if(in_array(false, $status)){
+					$filesError .= 	$fileLocation . ', ';
+				}
+			}
+            notification::StoreWarning(str_replace('{file}', $filesError, $this->ErrorMessages['errorFileSize']));
             return false;
         }
     }
@@ -454,70 +539,113 @@ class ftp extends rocketpack {
      */
 
     public function lastModified($file) {
-        $lastModified = ftp_mdtm($this->storeConnection, $file);
-
-        if ($lastModified) {
+		$wasError = '';
+		if(!is_array($file)){
+			$file = array($file);
+		}
+		foreach($file as $singlefile){
+        	$lastModified[$singlefile] = ftp_mdtm($this->storeConnection, $singlefile);
+			if (!$lastModified[$singlefile]) {
+				$wasError[] = $singlefile;
+			}
+		}
+		
+         if (!in_array(false, $lastModified)) {
             return $lastModified;
-        } else {
-            notification::StoreWarning(str_replace('{file}', $file, $this->ErrorMessages['errorModifiedDate']));
+         } else {
+			foreach($lastModified as $fileLocation => $status){
+				if(in_array(false, $status)){
+					$filesError .= 	$fileLocation . ', ';
+				}
+			}
+            notification::StoreWarning(str_replace('{file}', $filesError, $this->ErrorMessages['errorModifiedDate']));
             return false;
         }
     }
 
     /* Check that item does not already exsist
      * @Author Sam Mottley
+	 *UNTESTED
      */
 
     public function checkItemPresent($item, $location) {
-
-        $items = $this->listFilesInDirectory($location, '');
-
-        if (in_array($item, $items)) {
-            return true;
-        } else {
-            return false;
-        }
+		$wasError = '';
+		if(!is_array($item)){
+			$item = array($item);
+		}
+		$i = 0;
+		foreach($item as $singleItem){
+        	$items[$singleItem] = $this->listFilesInDirectory($location[$i].$singleItem, '');
+			$i++;
+		}
+		
+		return $items;
     }
 
     /* Rename an item from one name to another and move it too :)
      * @Author Sam Mottley
+	 * UNTESTED
      */
 
-    public function renameAndMoveItem($itemOldName, $itemNewName) {
-        $pathInfoOldName = pathinfo($itemOldName);
-        $pathInfoNewName = pathinfo($itemNewName);
+    public function renameAndMoveItem($itemOldName, $itemNewName = NULL) {
+		$wasError = '';
+		if(!is_array($item)){
+			$item = array($itemOldName => $itemNewName);
+		}
+		
+		foreach($item as $itemOldName => $itemNewName){
+        	$pathInfoOldName = pathinfo($itemOldName);
+        	$pathInfoNewName = pathinfo($itemNewName);
 
-        //check to see were not going to over write an item!
-        if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
-            //item already exsists
-            notification::StoreWarning(str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem'])));
-
-            return false;
-        } else {
-            if ((strstr($itemOldName, '/')) && ($itemOldName['extension'] != '')) {
-                $currentLocation = $this->currentDirectory();
-                if ($this->setCurrentDirectory($pathInfoOldName['dirname'])) {
-                    //Attempt to rename file
-                    if (($ftpChmod = ftp_rename($this->storeConnection, $pathInfoOldName['basename'], $pathInfoNewName['basename']))) {
-                        return true;
-                    } else {
-                        notification::StoreWarning(str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem'])));
-
-                        return false;
-                    }
-                }
-                $this->setCurrentDirectory($currentLocation);
-            } else {
-                //Attempt to rename  file
-                if (($ftpChmod = ftp_rename($this->storeConnection, $itemOldName, $itemNewName))) {
-                    return true;
-                } else {
-                    notification::StoreWarning(str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem'])));
-
-                    return false;
-                }
-            }
-        }
+			//check to see were not going to over write an item!
+			if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
+				//item already exsists
+				$wasError[$ItemData['itemOldName']][] = 'itemExsists';
+			} else {
+				if ((strstr($itemOldName, '/')) && ($itemOldName['extension'] != '')) {
+					$currentLocation = $this->currentDirectory();
+					if ($this->setCurrentDirectory($pathInfoOldName['dirname'])) {
+						//Attempt to rename file
+						if (($ftpRename = ftp_rename($this->storeConnection, $pathInfoOldName['basename'], $pathInfoNewName['basename']))) {
+							//return true;
+						} else {
+							$wasError[$ItemData['itemOldName']][] = 'renameFailed';
+						}
+					}else{
+						$wasError[$ItemData['itemOldName']][] = 'setDirectory';	
+					}
+					$this->setCurrentDirectory($currentLocation);
+				} else {
+						//Attempt to rename  file
+						if (($ftpRename = ftp_rename($this->storeConnection, $itemOldName, $itemNewName))) {
+							//return true;
+						} else {
+							$wasError[$ItemData['itemOldName']][] = 'renameFailed';
+						}
+				}
+			}
+		}
+		
+		if($wasError == ''){
+			return true;
+		}else{
+			$errorString = '';
+			foreach($wasError as $file => $error){
+				switch ($file){
+					case 'itemExsists':
+						$errorString .= $file . ' could not be found ';
+					break;
+					case 'renameFailed':
+						$errorString .= $file . ' could not be renamed ';
+					break;
+					case 'setDirectory':
+						$errorString .= $file .  'could not find the directory ';
+					break;
+				}
+			}
+			notification::StoreWarning(str_replace('{errorList}', $errorString, str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem']))));	
+			return false;		
+		}
     }
 
     /* Move a folder with its contains from one position to another
