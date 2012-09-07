@@ -155,7 +155,6 @@ class ftp extends rocketpack {
 
     /* Here we write a settings array set outside the class to the private settings varables  
      * @Author Sam Mottley
-	 *UNTESTED
      */
 
     public function writeSettings($settingsArray) {
@@ -254,37 +253,37 @@ class ftp extends rocketpack {
 
     /* Make directory 
      * @Author Sam Mottley
-	 *UNTESTED
      */
 
-    public function makeDirectory($makeDirectory, $permissions = '0644', $recursive = TRUE) {
+    public function makeDirectory($makeDirectory, $permissions = '777', $recursive = TRUE) {
 		$wasError = '';
 		if(!is_array($makeDirectory)){
-			$makeDirectory = array($makeDirectory);
+			$makeDirectory = array(array($makeDirectory, $permissions, $recursive));
 		}
-		foreach($makeDirectory as $directory){
+		foreach($makeDirectory as $number => $information){
 			$errorMakingDir = 0;
-			if ($recursive == TRUE) {
+			$ftpCreate = false;
+			if ($information[2] == TRUE) {
 				$currentLocation = $this->currentDirectory();
-				$exlodePath = explode('/', $directory);
+				$exlodePath = explode('/', $information[0]);
 				$path = '';
 				foreach ($exlodePath as $number => $folderName) {
 					$path .= '/' . $folderName;
 					if (@$this->setCurrentDirectory($folderName) == false) {
 						if ($ftpCreate = ftp_mkdir($this->storeConnection, $path)) {
-							$this->chmodItem($directory, $permissions);
+							if($information[1] != false) { $this->chmodItem($path, $information[1]); }
 						} else {
-							$wasError[] = $directory;
+							$wasError[] = $information[0];
 						}
 					}
 				}
 	
 				$this->setCurrentDirectory($currentLocation);
 			} else {
-				if ($ftpCreate = ftp_mkdir($this->storeConnection, $directory)) {
-					$this->chmodItem($directory, $permissions);
+				if ($ftpCreate = ftp_mkdir($this->storeConnection, $information[0])) {
+					$this->chmodItem($information[0], $$information[1]);
 				} else {
-					$wasError[] = $directory;
+					$wasError[] = $information[0];
 				}
 			}
 		}
@@ -318,14 +317,15 @@ class ftp extends rocketpack {
      */
 
     public function listFilesInDirectory($directory = '.', $additionPrams = '-la') {
-        $fileArray = ftp_nlist($this->storeConnection, $additionPrams . ' ' . $directory);
+      // $wasError = array();
+	    $fileArray = ftp_nlist($this->storeConnection, $additionPrams . ' ' . $directory);
         if ($fileArray) {
             return $fileArray;
         } else {
 			$errorSting = '';
-			foreach($wasError as $fileError){
+			//foreach($wasError as $fileError){
 				$errorSting .= $fileError . 'and';	
-			}
+			//}
             return false;
         }
     }
@@ -565,21 +565,25 @@ class ftp extends rocketpack {
 
     /* Check that item does not already exsist
      * @Author Sam Mottley
-	 *UNTESTED
      */
 
-    public function checkItemPresent($item, $location) {
+    public function checkItemPresent($item, $locations) {
 		$wasError = '';
 		if(!is_array($item)){
-			$item = array($item);
+			$item = array($item=>$locations);
 		}
-		$i = 0;
-		foreach($item as $singleItem){
-        	$items[$singleItem] = $this->listFilesInDirectory($location[$i].$singleItem, '');
-			$i++;
+		foreach($item as $singleItem => $location){
+			echo $singleItem;
+			$command = $this->listFilesInDirectory($location, '');
+			if(in_array($singleItem, $command)){ 
+				$items[$singleItem] = true; 
+			}else{ 
+				$items[$singleItem] = false; 
+			}
+			print_r($command);
 		}
-		
 		return $items;
+	
     }
 
     /* Rename an item from one name to another and move it too :)
@@ -650,21 +654,26 @@ class ftp extends rocketpack {
 
     /* Move a folder with its contains from one position to another
      * @Author Sam Mottley
+	 *UNTESTED
      */
 
     public function renameAndMoveFolder($currentLocation, $newLocation = NULL) {
 		$wasError = '';
 		if(!is_array($currentLocation)){
-			$item = array($itemOldName => $itemNewName);
+			$item = array(array($currentLocation, $newLocation));
 		}
-		
-		foreach($item as $itemOldName => $itemNewName){
-			$pathInfoOldName = pathinfo($itemOldName);
-			$pathInfoNewName = pathinfo($itemNewName);
+		foreach($item as $number => $information){
+			$pathInfoOldName = pathinfo($information[0]);
+			$pathInfoNewName = pathinfo($information[1]);
+			print_r($pathInfoNewName);
+			$itemOldName = $information[0];
+			$itemNewName = $information[1];
 	
 			//check to see were not going to over write an item!
-			if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
+			$ItemPresent = $this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname']);
+			if ($ItemPresent[$pathInfoNewName['basename']]) {
 				//item already exsists
+				echo 'ERROR';
 				$wasError[$itemOldName][] = 'itemExsists';
 			} else {
 				if ((strstr($currentLocation, '/')) && (@$pathInfoOldName['extension'] == '')) {
