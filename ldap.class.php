@@ -58,7 +58,8 @@ class ldap {
 									'errorIncorrectPassword'=>'Password was incorrect',
 									'errorIncorrectUsername'=>'User could not be found',
 									'errorIncorrectLoginDetails'=>'Invalid login details',
-									'errorEmptyLoginDetails'=>'No username and / or password supplied');
+									'errorEmptyLoginDetails'=>'No username and / or password supplied',
+									'errorSettingMissing' => 'You have missing the setting {setting}');
 	
 	
 	
@@ -73,14 +74,28 @@ class ldap {
 	 *@Author Sam Mottley
 	 */	
 	public function writeSettings($settingsArray){
-		$this->writeToVar('host', $settingsArray['host']);
-		$this->writeToVar('baseDn', $settingsArray['baseDn']);
-		$this->writeToVar('port', $settingsArray['port']);
+		if (!empty($settingsArray['host'])) {
+			$this->writeToVar('host', $settingsArray['host']);
+		} else {
+            $errorString = str_replace('{setting}', 'host', $this->ErrorMessages['errorSettingMissing']);
+        }
+		if (!empty($settingsArray['baseDn'])) {
+			$this->writeToVar('baseDn', $settingsArray['baseDn']);
+		} else {
+            $errorString = str_replace('{setting}', 'baseDn', $this->ErrorMessages['errorSettingMissing']);
+        }
+		if (!empty($settingsArray['port'])) {
+			$this->writeToVar('port', $settingsArray['port']);
+		} else {
+            $errorString = str_replace('{setting}', 'port', $this->ErrorMessages['errorSettingMissing']);
+        }
 		if(!empty($settingsArray['customErrorMessages'])){
 			foreach($settingsArray['customErrorMessages'] as $errorType => $customeMessage){
 				$this->writeToVar($ErrorMessage[$errorType], $customeMessage);
 			}
 		}
+		
+		notification::StoreWarning($errorString);
 	}
 	
 	/*Pulls back array of detail of the user from LDAP
