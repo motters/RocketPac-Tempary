@@ -332,7 +332,6 @@ class ftp extends rocketpack {
 
     /* Delete a file NOT a folder
      * @Author Sam Mottley
-	 * UNTESTED
      */
 
     public function deleteFile($file) {
@@ -378,7 +377,6 @@ class ftp extends rocketpack {
 
     /* Delete a folder with **no** content in it
      * @Author Sam Mottley
-	 *UNTESTED
      */
 
     public function deleteEmptyFolder($folder) {
@@ -410,16 +408,17 @@ class ftp extends rocketpack {
 
     /* Chmod item give it any path and it will handle it and return you to you past position 
      * @Author Sam Mottley
-	 * UNTESTED
      */
 
-    public function chmodItem($file, $permissions) {
+    public function chmodItem($file, $permissions = NULL) {
        $wasError = '';
 		if(!is_array($file)){
-			$file = array($file);
+			$file = array(array($file, $permissions));
 		}
-		foreach($file as $singlefile){
+		foreach($file as $number => $information){
 			$ftpChmod = '';
+			$singlefile = $information[0];
+			$permissions = $information[1];
 			//Make sire we are in the correct directory
 			if (strstr($singlefile, '/')) {
 				$pathInfo = pathinfo($singlefile);
@@ -429,7 +428,7 @@ class ftp extends rocketpack {
 					$ftpChmod = ftp_chmod($this->storeConnection, $permissions, $pathInfo['basename']);
 					
 					if (!$ftpChmod) {
-						$wasError[] = $singlefile;
+						$wasError[$singlefile] = 'errorChomding';
 					}
 				}
 				$this->setCurrentDirectory($currentLocation);
@@ -508,7 +507,6 @@ class ftp extends rocketpack {
 
     /* Get the current size of the file
      * @Author Sam Mottley
-	 * UNTESTED
      */
 
     public function getFileSize($file) {
@@ -517,11 +515,16 @@ class ftp extends rocketpack {
 			$file = array($file);
 		}
 		foreach($file as $singlefile){
+			$pathInfo = pathinfo($singlefile);
+			$currentDirectory = $this->currentDirectory();
+			
+			$this->setCurrentDirectory($pathInfo['dirname']);
         	//Attempt to get file size
-        	$getFileSize[$singlefile] = ftp_size($this->storeConnection, $singlefile);
+        	$getFileSize[$singlefile] = ftp_size($this->storeConnection, $pathInfo['basename']);
 			if (!$getFileSize[$singlefile]) {
 				$wasError[] = $singlefile;
 			}
+			$this->setCurrentDirectory($currentDirectory);
 		}
         //Check if apptempt was successfull
         if (!in_array(false, $getFileSize)) {
@@ -767,16 +770,23 @@ class ftp extends rocketpack {
 	 *UNTESTED
      */
 
-    public function uploadFileContentToExsistingFile($fileLocation, $fileServer, $transferMode = FTP_BINARY) {
+    public function uploadFileContentToExsistingFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY) {
         $wasError = '';
 		if(!is_array($fileLocation)){
 			$arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
+		}else{
+			$arrayInfo = $fileLocation;	
 		}
 		foreach($arrayInfo as $number => $singleData){
 			//Here we upload the file
-       		if($uploadFile[$singleData[1]] = ftp_put($this->storeConnection, $fileServer, $fileLocation, $transferMode)){
+			if(@$singleData[2] == ''){
+				$Type = FTP_BINARY;
 			}else{
-				$wasError[$singleData[0]] = 'uploadingFile:'.$singleData[2];
+				$Type = $singleData[2];	
+			}
+       		if($uploadFile[$singleData[0]] = ftp_put($this->storeConnection, $singleData[1], $singleData[0], $Type)){
+			}else{
+				$wasError[$singleData[0]] = 'uploadingFile:'.$Type;
 			}
 		}
         //here we check the file has been uploaded
