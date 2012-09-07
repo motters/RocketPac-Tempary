@@ -131,7 +131,7 @@ class ftp extends rocketpack {
         'errorDownloadFile' => 'There was an error downloading the file to {fileLocation} from the location {fileServer} with {transferMode}',
         'errorMoveFolder' => 'Could not move the folder {newLocation} to {currentLocation}',
         'errorRenameItem' => 'Could not rename {itemOldName} to {itemNewName}',
-        '' => '');
+        'errorRetrieveFile' => 'Could not download {file}');
 
     /* Here we define the php version id
      * @Author Sam Mottley
@@ -159,13 +159,13 @@ class ftp extends rocketpack {
      */
 
     public function writeSettings($settingsArray) {
-        if(array_key_exists($settingsArray,'host')){ $this->writeToVar('host', $settingsArray['host']);}
-        if(array_key_exists($settingsArray,'authType')){$this->writeToVar('authType', $settingsArray['authType']); }
-        if(array_key_exists($settingsArray,'username')){ $this->writeToVar('username', $settingsArray['username']); }
-        if(array_key_exists($settingsArray,'password')){ $this->writeToVar('password', $settingsArray['password']); }
-        if(array_key_exists($settingsArray,'port')){$this->writeToVar('port', $settingsArray['port']); }
-        if(array_key_exists($settingsArray,'passiveMode')){ $this->writeToVar('passiveMode', $settingsArray['passiveMode']); }
-        if(array_key_exists($settingsArray,'protocol')){$this->writeToVar('protocol', $settingsArray['protocol']); }
+        if(!empty($settingsArray['host'])){ $this->writeToVar('host', $settingsArray['host']);}
+        if(!empty($settingsArray['authType'])){$this->writeToVar('authType', $settingsArray['authType']); }
+        if(!empty($settingsArray['username'])){ $this->writeToVar('username', $settingsArray['username']); }
+        if(!empty($settingsArray['password'])){ $this->writeToVar('password', $settingsArray['password']); }
+        if(!empty($settingsArray['port'])){$this->writeToVar('port', $settingsArray['port']); }
+        if(!empty($settingsArray['passiveMode'])){ $this->writeToVar('passiveMode', $settingsArray['passiveMode']); }
+        if(!empty($settingsArray['protocol'])){$this->writeToVar('protocol', $settingsArray['protocol']); }
 
         if (!empty($settingsArray['customErrorMessages'])) {
             foreach ($settingsArray['customErrorMessages'] as $errorType => $customeMessage) {
@@ -752,17 +752,34 @@ class ftp extends rocketpack {
      */
 
     public function uploadFileContentToExsistingFile($fileLocation, $fileServer, $transferMode = FTP_BINARY) {
-        //Here we upload the file
-        $uploadFile = ftp_put($this->storeConnection, $fileServer, $fileLocation, $transferMode);
-
+        $wasError = '';
+		if(!is_array($fileLocation)){
+			$arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
+		}
+		foreach($arrayInfo as $number => $singleData){
+			//Here we upload the file
+       		if($uploadFile[$singleData[1]] = ftp_put($this->storeConnection, $fileServer, $fileLocation, $transferMode)){
+			}else{
+				$wasError[$singleData[0]] = 'uploadingFile:'.$singleData[2];
+			}
+		}
         //here we check the file has been uploaded
-        if ($uploadFile) {
-            return true;
-        } else {
-            notification::StoreWarning(str_replace('{transferMode}', $transferMode, str_replace('{fileServer}', $fileServer, str_replace('{fileLocation}', $fileLocation, $this->ErrorMessages['errorUploadFileContent']))));
-            return false;
-        }
-    }
+        if($wasError == ''){
+			return true;
+		}else{
+			$errorString = '';
+			foreach($wasError as $file => $error){
+				$errorIndv = explode(':', $error);
+				switch ($errorIndv[0]){
+					case 'uploadingFile':
+						$errorString .= str_replace('{transferMode}', $errorIndv[1], str_replace('{fileLocation}', $file, $this->ErrorMessages['errorUpdateFile'])) . ' ';
+					break;
+				}
+			}
+            notification::StoreWarning($errorString);
+			return false;		
+		}    
+	}
 
     /* Upload a file
      * @Author Sam Mottley
@@ -771,26 +788,49 @@ class ftp extends rocketpack {
      */
 
     public function uploadFile($fileLocation, $fileServer, $transferMode = FTP_BINARY) {
-        //Here we set the CURRENT directory
-        $currentLocation = $this->currentDirectory();
-
-        //set the new directory relivent to root
-        $this->setCurrentDirectory('/'); //Set it to root
-        //open file
-        $filePointer = fopen($fileLocation, 'r');
-
-        //Here we upload the file
-        $uploadFile = ftp_fput($this->storeConnection, $fileServer, $filePointer, $transferMode);
-
-        //Here we set the dictory back to what it was
-        $this->setCurrentDirectory($currentLocation); //Set it to root
-        //here we check the file has been uploaded
-        if ($uploadFile) {
-            return true;
-        } else {
-            notification::StoreWarning(str_replace('{transferMode}', $transferMode, str_replace('{fileServer}', $fileServer, str_replace('{fileLocation}', $fileLocation, $this->ErrorMessages['errorUpdateFile']))));
-            return false;
-        }
+		$wasError = '';
+		if(!is_array($fileLocation)){
+			$arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
+		}
+		foreach($arrayInfo as $number => $singleData){
+			//Here we set the CURRENT directory
+			$currentLocation = $this->currentDirectory();
+	
+			//set the new directory relivent to root
+			$this->setCurrentDirectory('/'); //Set it to root
+			//open file
+			if($filePointer = fopen($fileLocation, 'r')){
+	
+				//Here we upload the file
+				if($uploadFile[$singleData[0]] = ftp_fput($this->storeConnection, $singleData[1], $filePointer, $singleData[2])){
+					
+				}else{
+					$wasError[$singleData[0]] = 'uploadingFile:'.$singleData[2];
+				}
+			}else{
+				$wasError[$singleData[0]] = 'openingFile:'.$singleData[2];
+			}
+			//Here we set the dictory back to what it was
+			$this->setCurrentDirectory($currentLocation); 
+		}
+       if($wasError == ''){
+			return true;
+		}else{
+			$errorString = '';
+			foreach($wasError as $file => $error){
+				$errorIndv = explode(':', $error);
+				switch ($errorIndv[0]){
+					case 'uploadingFile':
+						$errorString .= str_replace('{transferMode}', $errorIndv[1], str_replace('{fileLocation}', $file, $this->ErrorMessages['errorUpdateFile'])) . ' ';
+					break;
+					case 'openingFile':
+						$errorString .= str_replace('{transferMode}', $errorIndv[1], str_replace('{fileLocation}', $file, $this->ErrorMessages['errorUpdateFile'])) . ' ';
+					break;
+				}
+			}
+            notification::StoreWarning($errorString);
+			return false;		
+		}
     }
 
     /* download a file
@@ -831,11 +871,11 @@ class ftp extends rocketpack {
 			foreach($wasError as $file => $error){
 				switch ($file){
 					case 'retrievingFile':
-						$errorString .= $file . ' could not be downloaded';
+						$errorString .= str_replace('{file}', $file, $this->ErrorMessages['errorRetrieveFile']) . ' ' ;
 					break;
 				}
 			}
-			notification::StoreWarning(str_replace('{newLocation}', $errorString, $this->ErrorMessages['errorMoveFolder']));
+			notification::StoreWarning($errorString);
 			return false;		
 		}
     }
