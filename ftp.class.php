@@ -132,7 +132,11 @@ class ftp extends rocketpack {
         'errorMoveFolder' => 'Could not move the folder {newLocation} to {currentLocation}',
         'errorRenameItem' => 'Could not rename {itemOldName} to {itemNewName}',
         'errorRetrieveFile' => 'Could not download {file}',
-		'errorRetrieveFileExists' => 'Could not download {file} as {file} already exists');
+		'errorRetrieveFileExists' => 'Could not download {file} as {file} already exists',
+		'errorItemNotFound' => 'Could not find {file}',
+		'errorOpenFile' => 'Could not open the file {fileLocation} type was {transferMode}',       
+		'errorSettingDirectory' => 'Could not set the directory for {item}',
+		'errorSettingMissing' => 'You have missing the setting {setting}');
 
     /* Here we define the php version id
      * @Author Sam Mottley
@@ -159,11 +163,11 @@ class ftp extends rocketpack {
      */
 
     public function writeSettings($settingsArray) {
-        if(!empty($settingsArray['host'])){ $this->writeToVar('host', $settingsArray['host']);}
-        if(!empty($settingsArray['authType'])){$this->writeToVar('authType', $settingsArray['authType']); }
-        if(!empty($settingsArray['username'])){ $this->writeToVar('username', $settingsArray['username']); }
-        if(!empty($settingsArray['password'])){ $this->writeToVar('password', $settingsArray['password']); }
-        if(!empty($settingsArray['port'])){$this->writeToVar('port', $settingsArray['port']); }
+        if(!empty($settingsArray['host'])){ $this->writeToVar('host', $settingsArray['host']);}else{ $errorString = str_replace('{setting}', 'host', $this->ErrorMessages['errorSettingMissing']); }
+        if(!empty($settingsArray['authType'])){$this->writeToVar('authType', $settingsArray['authType']); }else{ $errorString = str_replace('{setting}', 'authType', $this->ErrorMessages['errorSettingMissing']); }
+        if(!empty($settingsArray['username'])){ $this->writeToVar('username', $settingsArray['username']); }else{ $errorString = str_replace('{setting}', 'username', $this->ErrorMessages['errorSettingMissing']); }
+        if(!empty($settingsArray['password'])){ $this->writeToVar('password', $settingsArray['password']); }else{ $errorString = str_replace('{setting}', 'password', $this->ErrorMessages['errorSettingMissing']); }
+        if(!empty($settingsArray['port'])){$this->writeToVar('port', $settingsArray['port']); }else{ $errorString = str_replace('{setting}', 'port', $this->ErrorMessages['errorSettingMissing']); }
         if(!empty($settingsArray['passiveMode'])){ $this->writeToVar('passiveMode', $settingsArray['passiveMode']); }
         if(!empty($settingsArray['protocol'])){$this->writeToVar('protocol', $settingsArray['protocol']); }
 
@@ -172,6 +176,8 @@ class ftp extends rocketpack {
                 $this->writeToVar('ErrorMessages[' . $errorType . ']', $customeMessage);
             }
         }
+		
+		notification::StoreWarning($errorString);
     }
 
     /* Connect via SSL and uses standard ftp functions
@@ -647,18 +653,18 @@ class ftp extends rocketpack {
 			foreach($wasError as $file => $error){
 				switch ($file){
 					case 'itemNotExsists':
-						$errorString .= $file . ' could not be found ';
+						$errorString .=str_replace('{item}', $file, $this->ErrorMessages['errorItemNotFound']) . ' ';;
 					break;
 					case 'renameFailed':
-						$errorString .= $file . ' could not be renamed ';
+						$errorString .= str_replace('{item}', $file, $this->ErrorMessages['errorRenameItem']) . ' ';
 					break;
 					case 'setDirectory':
-						$errorString .= $file .  'could not find the directory ';
+						$errorString .= str_replace('{item}', $file, $this->ErrorMessages['errorSettingDirectory']) . ' ';;
 					break;
 				}
 			}
 			print_r($wasError);
-			notification::StoreWarning(str_replace('{errorList}', $errorString, str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem']))));	
+			notification::StoreWarning($errorString);	
 			return false;		
 		}
     }
@@ -858,7 +864,7 @@ class ftp extends rocketpack {
 						$errorString .= str_replace('{transferMode}', $errorIndv[1], str_replace('{fileLocation}', $file, $this->ErrorMessages['errorUpdateFile'])) . ' ';
 					break;
 					case 'openingFile':
-						$errorString .= str_replace('{transferMode}', $errorIndv[1], str_replace('{fileLocation}', $file, $this->ErrorMessages['errorUpdateFile'])) . ' ';
+						$errorString .= str_replace('{transferMode}', $errorIndv[1], str_replace('{fileLocation}', $file, $this->ErrorMessages['errorOpenFile'])) . ' ';
 					break;
 				}
 			}
@@ -930,5 +936,4 @@ class ftp extends rocketpack {
     }
 
 }
-$sam = array(array('test.php', 'test.php', '0644', FTP_BINARY), array('test2.php', 'test2.php', '0644', FTP_BINARY));
 ?>
