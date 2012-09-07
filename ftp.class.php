@@ -339,6 +339,8 @@ class ftp extends rocketpack {
 		$wasError = '';
 		if(!is_array($file)){
 			$file = array($file);
+		}else{
+			$file = $file;	
 		}
 		foreach($file as $singleFile){
 			if (strstr($singleFile, '/')) {
@@ -352,6 +354,7 @@ class ftp extends rocketpack {
 					 }
 						
 				}
+				$this->setCurrentDirectory($currentLocation);
 			}else{
 				//Attempt to delete file
 				$ftpDelete = ftp_delete($this->storeConnection, $singleFile);	
@@ -587,7 +590,6 @@ class ftp extends rocketpack {
 
     /* Rename an item from one name to another and move it too :)
      * @Author Sam Mottley
-	 * UNTESTED
      */
 
     public function renameAndMoveItem($itemOldName, $itemNewName = NULL) {
@@ -762,6 +764,7 @@ class ftp extends rocketpack {
 
     /* Get the local file content and upload the contents to an EXSISTING file on the server and over write the content.
      * @Author Sam Mottley
+	 *UNTESTED
      */
 
     public function uploadFileContentToExsistingFile($fileLocation, $fileServer, $transferMode = FTP_BINARY) {
@@ -798,6 +801,7 @@ class ftp extends rocketpack {
      * @Author Sam Mottley
      * @VAR fileServer relivent to root of ftp access
      * @VAR fileLocation relivent to web server 
+	 * UNTESTED
      */
 
     public function uploadFile($fileLocation, $fileServer, $transferMode = FTP_BINARY) {
