@@ -580,7 +580,6 @@ class ftp extends rocketpack {
 			}else{ 
 				$items[$singleItem] = false; 
 			}
-			print_r($command);
 		}
 		return $items;
 	
@@ -594,23 +593,28 @@ class ftp extends rocketpack {
     public function renameAndMoveItem($itemOldName, $itemNewName = NULL) {
 		$wasError = '';
 		if(!is_array($itemOldName)){
-			$item = array($itemOldName => $itemNewName);
+			$item = array(array($itemOldName, $itemNewName));
+		}else{
+			$item = $itemOldName;	
 		}
-		
-		foreach($item as $itemOldName => $itemNewName){
-        	$pathInfoOldName = pathinfo($itemOldName);
-        	$pathInfoNewName = pathinfo($itemNewName);
-
+		foreach($item as $number => $information){
+        	$pathInfoOldName = pathinfo($information[0]);
+        	$pathInfoNewName = pathinfo($information[1]);
+			$itemOldName = $information[0];
+			$itemNewName = $information[1];
+			
 			//check to see were not going to over write an item!
-			if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
+			$checkPresent = $this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname']);
+
+			if ($checkPresent[$pathInfoNewName['basename']] == true) {
 				//item already exsists
-				$wasError[$itemOldName][] = 'itemExsists';
+				$wasError[$itemOldName][] = 'itemNotExsists';
 			} else {
 				if ((strstr($itemOldName, '/')) && ($itemOldName['extension'] != '')) {
 					$currentLocation = $this->currentDirectory();
 					if ($this->setCurrentDirectory($pathInfoOldName['dirname'])) {
 						//Attempt to rename file
-						if (($ftpRename[$itemOldName] = ftp_rename($this->storeConnection, $pathInfoOldName['basename'], $pathInfoNewName['basename']))) {
+						if (($ftpRename[$itemOldName] = ftp_rename($this->storeConnection, $itemOldName, $itemNewName))) {
 							//return true;
 						} else {
 							$wasError[$itemOldName][] = 'renameFailed';
@@ -636,7 +640,7 @@ class ftp extends rocketpack {
 			$errorString = '';
 			foreach($wasError as $file => $error){
 				switch ($file){
-					case 'itemExsists':
+					case 'itemNotExsists':
 						$errorString .= $file . ' could not be found ';
 					break;
 					case 'renameFailed':
@@ -647,6 +651,7 @@ class ftp extends rocketpack {
 					break;
 				}
 			}
+			print_r($wasError);
 			notification::StoreWarning(str_replace('{errorList}', $errorString, str_replace('{itemOldName}', $itemOldName, str_replace('{itemNewName}', $itemNewName, $this->ErrorMessages['errorRenameItem']))));	
 			return false;		
 		}
@@ -654,38 +659,37 @@ class ftp extends rocketpack {
 
     /* Move a folder with its contains from one position to another
      * @Author Sam Mottley
-	 *UNTESTED
      */
 
     public function renameAndMoveFolder($currentLocation, $newLocation = NULL) {
 		$wasError = '';
 		if(!is_array($currentLocation)){
 			$item = array(array($currentLocation, $newLocation));
+		}else{
+			$item = $currentLocation;	
 		}
 		foreach($item as $number => $information){
 			$pathInfoOldName = pathinfo($information[0]);
 			$pathInfoNewName = pathinfo($information[1]);
-			print_r($pathInfoNewName);
-			$itemOldName = $information[0];
-			$itemNewName = $information[1];
+			$currentLocation = $information[0];
+			$newLocation = $information[1];
 	
 			//check to see were not going to over write an item!
 			$ItemPresent = $this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname']);
 			if ($ItemPresent[$pathInfoNewName['basename']]) {
 				//item already exsists
-				echo 'ERROR';
-				$wasError[$itemOldName][] = 'itemExsists';
+				$wasError[$currentLocation][] = 'itemExsists';
 			} else {
 				if ((strstr($currentLocation, '/')) && (@$pathInfoOldName['extension'] == '')) {
-					if($moveFolder[$itemOldName] = ftp_rename($this->storeConnection, $currentLocation, $newLocation)){
+					if($moveFolder[$currentLocation] = ftp_rename($this->storeConnection, $currentLocation, $newLocation)){
 						
 					}else{
-						$wasError[$itemOldName][] = 'renameFailed';	
+						$wasError[$currentLocation][] = 'renameFailed';	
 					}
 	
 				} else {
 					//ERROR HERE
-					$wasError[$itemOldName][] = 'setDirectory';	
+					$wasError[$currentLocation][] = 'setDirectory';	
 					return false;
 				}
 			}
