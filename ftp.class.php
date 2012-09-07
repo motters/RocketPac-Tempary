@@ -131,7 +131,8 @@ class ftp extends rocketpack {
         'errorDownloadFile' => 'There was an error downloading the file to {fileLocation} from the location {fileServer} with {transferMode}',
         'errorMoveFolder' => 'Could not move the folder {newLocation} to {currentLocation}',
         'errorRenameItem' => 'Could not rename {itemOldName} to {itemNewName}',
-        'errorRetrieveFile' => 'Could not download {file}');
+        'errorRetrieveFile' => 'Could not download {file}',
+		'errorRetrieveFileExists' => 'Could not download {file} as {file} already exists');
 
     /* Here we define the php version id
      * @Author Sam Mottley
@@ -767,7 +768,6 @@ class ftp extends rocketpack {
 
     /* Get the local file content and upload the contents to an EXSISTING file on the server and over write the content.
      * @Author Sam Mottley
-	 *UNTESTED
      */
 
     public function uploadFileContentToExsistingFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY) {
@@ -814,10 +814,12 @@ class ftp extends rocketpack {
 	 * UNTESTED
      */
 
-    public function uploadFile($fileLocation, $fileServer, $transferMode = FTP_BINARY) {
+    public function uploadFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY) {
 		$wasError = '';
 		if(!is_array($fileLocation)){
 			$arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
+		}else{
+			$arrayInfo = $fileLocation;	
 		}
 		foreach($arrayInfo as $number => $singleData){
 			//Here we set the CURRENT directory
@@ -825,17 +827,22 @@ class ftp extends rocketpack {
 	
 			//set the new directory relivent to root
 			$this->setCurrentDirectory('/'); //Set it to root
+			if(@$singleData[2] == ''){
+				$Type = FTP_BINARY;
+			}else{
+				$Type = $singleData[2];	
+			}
 			//open file
-			if($filePointer = fopen($fileLocation, 'r')){
+			if($filePointer = fopen($singleData[0], 'r')){
 	
 				//Here we upload the file
-				if($uploadFile[$singleData[0]] = ftp_fput($this->storeConnection, $singleData[1], $filePointer, $singleData[2])){
+				if($uploadFile[$singleData[0]] = ftp_fput($this->storeConnection, $singleData[1], $filePointer, $Type)){
 					
 				}else{
-					$wasError[$singleData[0]] = 'uploadingFile:'.$singleData[2];
+					$wasError[$singleData[0]] = 'uploadingFile:'.$Type;
 				}
 			}else{
-				$wasError[$singleData[0]] = 'openingFile:'.$singleData[2];
+				$wasError[$singleData[0]] = 'openingFile:'.$Type;
 			}
 			//Here we set the dictory back to what it was
 			$this->setCurrentDirectory($currentLocation); 
@@ -867,29 +874,41 @@ class ftp extends rocketpack {
 	 * UNTESTED
      */
 
-    public function retrieveFile($fileLocation, $fileServer=NULL, $transferMode = FTP_BINARY) {
+    public function retrieveFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY, $overWriteSigle =NULL) {
 		$wasError = '';
 		if(!is_array($fileLocation)){
 			$arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
+		}else{
+			$arrayInfo = $fileLocation;	
 		}
 		$i = 0;
 		foreach($arrayInfo as $number => $singleData){
+			if((!file_exists($singleData[0])) || ($fileServer != 0) || ($overWriteSigle == 1)){
 			//File pointer
 			$filePointer = fopen($singleData[0], 'w');
-	
+			fwrite($filePointer, '');//
 			//Here we set the CURRENT directory
 			$currentLocation = $this->currentDirectory();
 	
+			if(@$singleData[2] == ''){
+				$Type = FTP_BINARY;
+			}else{
+				$Type = $singleData[2];	
+			}
+			
 			//set the new directory relivent to root
 			$this->setCurrentDirectory('/'); //Set it to root
 	
-			if($retieveFile[$singleData[0]] = ftp_fget($this->storeConnection, $filePointer, $singleData[1], $singleData[2], 0)){
+			if($retieveFile[$singleData[0]] = ftp_fget($this->storeConnection, $filePointer, $singleData[1], $Type, 0)){
 			}else{
 				$wasError[$singleData[0]] = 'retrievingFile';
 			}
 	
 			//Go back to the last directory
 			$this->setCurrentDirectory($currentLocation);
+			}else{
+				$wasError[$singleData[0]] = 'errorFileExists';
+			}
 		}
         if($wasError == ''){
 			return true;
@@ -899,6 +918,9 @@ class ftp extends rocketpack {
 				switch ($file){
 					case 'retrievingFile':
 						$errorString .= str_replace('{file}', $file, $this->ErrorMessages['errorRetrieveFile']) . ' ' ;
+					break;
+					case 'errorFileExists':
+						$errorString .= str_replace('{file}', $file, $this->ErrorMessages['errorRetrieveFileExists']) . ' ' ;
 					break;
 				}
 			}
