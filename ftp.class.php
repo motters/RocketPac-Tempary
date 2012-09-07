@@ -589,7 +589,7 @@ class ftp extends rocketpack {
 
     public function renameAndMoveItem($itemOldName, $itemNewName = NULL) {
 		$wasError = '';
-		if(!is_array($item)){
+		if(!is_array($itemOldName)){
 			$item = array($itemOldName => $itemNewName);
 		}
 		
@@ -600,19 +600,19 @@ class ftp extends rocketpack {
 			//check to see were not going to over write an item!
 			if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
 				//item already exsists
-				$wasError[$ItemData['itemOldName']][] = 'itemExsists';
+				$wasError[$itemOldName][] = 'itemExsists';
 			} else {
 				if ((strstr($itemOldName, '/')) && ($itemOldName['extension'] != '')) {
 					$currentLocation = $this->currentDirectory();
 					if ($this->setCurrentDirectory($pathInfoOldName['dirname'])) {
 						//Attempt to rename file
-						if (($ftpRename = ftp_rename($this->storeConnection, $pathInfoOldName['basename'], $pathInfoNewName['basename']))) {
+						if (($ftpRename[$itemOldName] = ftp_rename($this->storeConnection, $pathInfoOldName['basename'], $pathInfoNewName['basename']))) {
 							//return true;
 						} else {
-							$wasError[$ItemData['itemOldName']][] = 'renameFailed';
+							$wasError[$itemOldName][] = 'renameFailed';
 						}
 					}else{
-						$wasError[$ItemData['itemOldName']][] = 'setDirectory';	
+						$wasError[$itemOldName][] = 'setDirectory';	
 					}
 					$this->setCurrentDirectory($currentLocation);
 				} else {
@@ -620,7 +620,7 @@ class ftp extends rocketpack {
 						if (($ftpRename = ftp_rename($this->storeConnection, $itemOldName, $itemNewName))) {
 							//return true;
 						} else {
-							$wasError[$ItemData['itemOldName']][] = 'renameFailed';
+							$wasError[$itemOldName][] = 'renameFailed';
 						}
 				}
 			}
@@ -652,24 +652,55 @@ class ftp extends rocketpack {
      * @Author Sam Mottley
      */
 
-    public function renameAndMoveFolder($currentLocation, $newLocation) {
-        $pathInfoOldName = pathinfo($currentLocation);
-        $pathInfoNewName = pathinfo($newLocation);
-
-        //check to see were not going to over write an item!
-        if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
-            //item already exsists
-        } else {
-            if ((strstr($currentLocation, '/')) && (@$pathInfoOldName['extension'] == '')) {
-                $moveFolder = ftp_rename($this->storeConnection, $currentLocation, $newLocation);
-
-                return $moveFolder;
-            } else {
-                //ERROR HERE
-                notification::StoreWarning(str_replace('{newLocation}', $newLocation, str_replace('{currentLocation}', $currentLocation, $this->ErrorMessages['errorMoveFolder'])));
-                return false;
-            }
-        }
+    public function renameAndMoveFolder($currentLocation, $newLocation = NULL) {
+		$wasError = '';
+		if(!is_array($currentLocation)){
+			$item = array($itemOldName => $itemNewName);
+		}
+		
+		foreach($item as $itemOldName => $itemNewName){
+			$pathInfoOldName = pathinfo($itemOldName);
+			$pathInfoNewName = pathinfo($itemNewName);
+	
+			//check to see were not going to over write an item!
+			if ($this->checkItemPresent($pathInfoNewName['basename'], $pathInfoNewName['dirname'])) {
+				//item already exsists
+				$wasError[$itemOldName][] = 'itemExsists';
+			} else {
+				if ((strstr($currentLocation, '/')) && (@$pathInfoOldName['extension'] == '')) {
+					if($moveFolder[$itemOldName] = ftp_rename($this->storeConnection, $currentLocation, $newLocation)){
+						
+					}else{
+						$wasError[$itemOldName][] = 'renameFailed';	
+					}
+	
+				} else {
+					//ERROR HERE
+					$wasError[$itemOldName][] = 'setDirectory';	
+					return false;
+				}
+			}
+		}
+		if($wasError == ''){
+			return true;
+		}else{
+			$errorString = '';
+			foreach($wasError as $file => $error){
+				switch ($file){
+					case 'itemExsists':
+						$errorString .= $file . ' could not be found ';
+					break;
+					case 'renameFailed':
+						$errorString .= $file . ' could not be renamed ';
+					break;
+					case 'setDirectory':
+						$errorString .= $file .  'could not find the directory ';
+					break;
+				}
+			}
+			notification::StoreWarning(str_replace('{newLocation}', $newLocation, str_replace('{currentLocation}', $currentLocation, $this->ErrorMessages['errorMoveFolder'])));
+			return false;		
+		}
     }
 
     /* Sends an arbitrary command to an FTP server
@@ -766,30 +797,49 @@ class ftp extends rocketpack {
      * @Author Sam Mottley
      * @VAR fileServer relivent to root of ftp access
      * @VAR fileLocation relivent to web server 
+	 * UNTESTED
      */
 
-    public function retrieveFile($fileLocation, $fileServer, $transferMode = 'FTP_BINARY') {
-        //File pointer
-        $filePointer = fopen($fileLocation, 'w');
-
-        //Here we set the CURRENT directory
-        $currentLocation = $this->currentDirectory();
-
-        //set the new directory relivent to root
-        $this->setCurrentDirectory('/'); //Set it to root
-
-        $retieveFile = ftp_fget($this->storeConnection, $filePointer, $fileServer, FTP_BINARY, 0);
-
-        //Go back to the last directory
-        $this->setCurrentDirectory($currentLocation);
-        if ($retieveFile) {
-            return true;
-        } else {
-            notification::StoreWarning(str_replace('{transferMode}', $transferMode, str_replace('{fileServer}', $fileServer, str_replace('{fileLocation}', $fileLocation, $this->ErrorMessages['errorDownloadFile']))));
-            return false;
-        }
+    public function retrieveFile($fileLocation, $fileServer=NULL, $transferMode = FTP_BINARY) {
+		$wasError = '';
+		if(!is_array($fileLocation)){
+			$arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
+		}
+		$i = 0;
+		foreach($arrayInfo as $number => $singleData){
+			//File pointer
+			$filePointer = fopen($singleData[0], 'w');
+	
+			//Here we set the CURRENT directory
+			$currentLocation = $this->currentDirectory();
+	
+			//set the new directory relivent to root
+			$this->setCurrentDirectory('/'); //Set it to root
+	
+			if($retieveFile[$singleData[0]] = ftp_fget($this->storeConnection, $filePointer, $singleData[1], $singleData[2], 0)){
+			}else{
+				$wasError[$singleData[0]] = 'retrievingFile';
+			}
+	
+			//Go back to the last directory
+			$this->setCurrentDirectory($currentLocation);
+		}
+        if($wasError == ''){
+			return true;
+		}else{
+			$errorString = '';
+			foreach($wasError as $file => $error){
+				switch ($file){
+					case 'retrievingFile':
+						$errorString .= $file . ' could not be downloaded';
+					break;
+				}
+			}
+			notification::StoreWarning(str_replace('{newLocation}', $errorString, $this->ErrorMessages['errorMoveFolder']));
+			return false;		
+		}
     }
 
 }
-
+$sam = array(array('test.php', 'test.php', '0644', FTP_BINARY), array('test2.php', 'test2.php', '0644', FTP_BINARY));
 ?>
