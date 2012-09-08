@@ -75,20 +75,21 @@ class ldap {
      */
 
     public function writeSettings($settingsArray) {
+		$errorString = '';
         if (!empty($settingsArray['host'])) {
             $this->writeToVar('host', $settingsArray['host']);
         } else {
-            $errorString = str_replace('{setting}', 'host', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'host', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['baseDn'])) {
             $this->writeToVar('baseDn', $settingsArray['baseDn']);
         } else {
-            $errorString = str_replace('{setting}', 'baseDn', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'baseDn', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['port'])) {
             $this->writeToVar('port', $settingsArray['port']);
         } else {
-            $errorString = str_replace('{setting}', 'port', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'port', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['customErrorMessages'])) {
             foreach ($settingsArray['customErrorMessages'] as $errorType => $customeMessage) {
@@ -105,6 +106,7 @@ class ldap {
 
     public function ldapUserToArray($searchData, $searchTerm, $filter = NULL) {
         //generate the search string query
+
         $search = $searchTerm . '=' . $searchData;
         //Reset warnings
         notification::ResetWarning();

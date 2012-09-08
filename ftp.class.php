@@ -164,30 +164,31 @@ class ftp extends rocketpack {
      */
 
     public function writeSettings($settingsArray) {
+		$errorString = '';
         if (!empty($settingsArray['host'])) {
             $this->writeToVar('host', $settingsArray['host']);
         } else {
-            $errorString = str_replace('{setting}', 'host', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'host', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['authType'])) {
             $this->writeToVar('authType', $settingsArray['authType']);
         } else {
-            $errorString = str_replace('{setting}', 'authType', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'authType', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['username'])) {
             $this->writeToVar('username', $settingsArray['username']);
         } else {
-            $errorString = str_replace('{setting}', 'username', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'username', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['password'])) {
             $this->writeToVar('password', $settingsArray['password']);
         } else {
-            $errorString = str_replace('{setting}', 'password', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'password', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['port'])) {
             $this->writeToVar('port', $settingsArray['port']);
         } else {
-            $errorString = str_replace('{setting}', 'port', $this->ErrorMessages['errorSettingMissing']);
+            $errorString .= str_replace('{setting}', 'port', $this->ErrorMessages['errorSettingMissing']);
         }
         if (!empty($settingsArray['passiveMode'])) {
             $this->writeToVar('passiveMode', $settingsArray['passiveMode']);
@@ -916,6 +917,7 @@ class ftp extends rocketpack {
         $i = 0;
         foreach ($arrayInfo as $number => $singleData) {
             if ((!file_exists($singleData[0])) || ($fileServer != 0) || ($overWriteSigle == 1)) {
+
                 //File pointer
                 $filePointer = fopen($singleData[0], 'w');
                 fwrite($filePointer, ''); //
