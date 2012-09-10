@@ -228,6 +228,7 @@ class ftp extends rocketpack {
 
             //Here we check that they login successully
             if ($stausLogin) {
+				//Here we turn pasive mode on or off depending on the settings above
                 if (ftp_pasv($this->storeConnection, $this->passiveMode)) {
                     $this->definePHPVersion();
                     return true;
@@ -266,6 +267,7 @@ class ftp extends rocketpack {
 
             //Here we check that they login successully
             if ($stausLogin) {
+				//Here we turn pasive mode on or off depending on the settings above
                 if (ftp_pasv($this->storeConnection, $this->passiveMode)) {
                     $this->definePHPVersion();
                     return true;
@@ -288,46 +290,49 @@ class ftp extends rocketpack {
      * @Author Sam Mottley
      */
 
-    public function makeDirectory($makeDirectory, $permissions = '777', $recursive = TRUE) {
+    public function makeDirectory($makeDirectory, $permissions = false, $recursive = TRUE) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($makeDirectory)) {
             $makeDirectory = array(array($makeDirectory, $permissions, $recursive));
         }
         foreach ($makeDirectory as $number => $information) {
-            $errorMakingDir = 0;
-            $ftpCreate = false;
-            if ($information[2] == TRUE) {
-                $currentLocation = $this->currentDirectory();
-                $exlodePath = explode('/', $information[0]);
-                $path = '';
-                foreach ($exlodePath as $number => $folderName) {
-                    $path .= '/' . $folderName;
-                    if (@$this->setCurrentDirectory($folderName) == false) {
-                        if ($ftpCreate = ftp_mkdir($this->storeConnection, $path)) {
-                            if ($information[1] != false) {
-                                $this->chmodItem($path, $information[1]);
+            $wasError = ''; //Here we decalre the error varable
+            $ftpCreate = false; //Here we decalre the FTP mkdir varble
+            if ($information[2] == TRUE) { //We see if recursive is set to true
+                $currentLocation = $this->currentDirectory(); //set the current directory
+                $exlodePath = explode('/', $information[0]); //see the folder 1 by 1
+                $path = ''; //declare the path varable
+                foreach ($exlodePath as $number => $folderName) { //loop though each folder
+                    $path .= '/' . $folderName; //add the folder to the path
+                    if (@$this->setCurrentDirectory($folderName) == false) { //chnage the current location
+                        if ($ftpCreate = ftp_mkdir($this->storeConnection, $path)) { //try to create the folder
+                            if ($information[1] != false) { //chmode the item is declared
+                                $this->chmodItem($path, $information[1]);  //chmod the item
                             }
                         } else {
-                            $wasError[] = $information[0];
+                            $wasError[] = $information[0]; // set the folder as an error
                         }
                     }
                 }
 
-                $this->setCurrentDirectory($currentLocation);
-            } else {
-                if ($ftpCreate = ftp_mkdir($this->storeConnection, $information[0])) {
-                    $this->chmodItem($information[0], $$information[1]);
+                $this->setCurrentDirectory($currentLocation); //return the location at the start of the command
+            } else { //recursive is set to false save time by not running loops we dont need
+                if ($ftpCreate = ftp_mkdir($this->storeConnection, $information[0])) { //attempt to make the file
+                    if ($information[1] != false) { //chmode the item is declared
+				    	$this->chmodItem($information[0], $$information[1]);  //chmod the item
+					}
                 } else {
-                    $wasError[] = $information[0];
+                    $wasError[] = $information[0];  // set the folder as an error
                 }
             }
         }
 
-        if ($ftpCreate) {
-            return true;
+        if ($wasError == '') { //check for any errors
+            return true; //no errors return true
         } else {
-            notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory, $this->ErrorMessages['errorCreateStructure']));
-            return false;
+            notification::StoreWarning(str_replace('{DirStructure}', $makeDirectory[0], $this->ErrorMessages['errorCreateStructure']));
+            return false; //error return false
         }
     }
 
@@ -370,6 +375,7 @@ class ftp extends rocketpack {
 
     public function deleteFile($file) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($file)) {
             $file = array($file);
         } else {
@@ -414,6 +420,7 @@ class ftp extends rocketpack {
 
     public function deleteEmptyFolder($folder) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($folder)) {
             $folder = array($folder);
         }
@@ -445,6 +452,7 @@ class ftp extends rocketpack {
 
     public function chmodItem($file, $permissions = NULL) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($file)) {
             $file = array(array($file, $permissions));
         }
@@ -544,6 +552,7 @@ class ftp extends rocketpack {
 
     public function getFileSize($file) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($file)) {
             $file = array($file);
         }
@@ -579,6 +588,7 @@ class ftp extends rocketpack {
 
     public function lastModified($file) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($file)) {
             $file = array($file);
         }
@@ -608,6 +618,7 @@ class ftp extends rocketpack {
 
     public function checkItemPresent($item, $locations) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($item)) {
             $item = array($item => $locations);
         }
@@ -629,6 +640,7 @@ class ftp extends rocketpack {
 
     public function renameAndMoveItem($itemOldName, $itemNewName = NULL) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($itemOldName)) {
             $item = array(array($itemOldName, $itemNewName));
         } else {
@@ -702,6 +714,7 @@ class ftp extends rocketpack {
 
     public function renameAndMoveFolder($currentLocation, $newLocation = NULL) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($currentLocation)) {
             $item = array(array($currentLocation, $newLocation));
         } else {
@@ -804,6 +817,7 @@ class ftp extends rocketpack {
 
     public function uploadFileContentToExsistingFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($fileLocation)) {
             $arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
         } else {
@@ -849,6 +863,7 @@ class ftp extends rocketpack {
 
     public function uploadFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($fileLocation)) {
             $arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
         } else {
@@ -909,6 +924,7 @@ class ftp extends rocketpack {
 
     public function retrieveFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY, $overWriteSigle = NULL) {
         $wasError = '';
+		//turn the information into an array if and array was not given in the first place
         if (!is_array($fileLocation)) {
             $arrayInfo = array(array($fileLocation, $fileServer, $transferMode));
         } else {
