@@ -11,7 +11,7 @@
  * $LDAP->writeSettings(array('host'=>'directory.example.co.uk', 'baseDn'=>'o=Your Company,c=GB', 'port'=>'PORTNUMBER', 'customErrorMessages' =>array('errorLdapSearch'=>'Custome error message here', 'errorIncorrectPassword'=>'Another custome error message here')));
  *
  * //Here we get a users details in an array
- * $GetDetails = $LDAP->ldapUserToArray('username', 'uid', NULL);//null does not have to be there but there to show you can add a filter to your returned array
+ * $GetDetails = $LDAP->ldapUserToArray('uid=username', NULL);//null does not have to be there but there to show you can add a filter to your returned array
  * print_r($GetDetails);
  *
  * //Here we will check the login detils
@@ -104,10 +104,10 @@ class ldap {
      * @Author Sam Mottley
      */
 
-    public function ldapUserToArray($searchData, $searchTerm, $filter = NULL) {
+    public function ldapUserToArray($search, $filter = NULL) {
         //generate the search string query
 
-        $search = $searchTerm . '=' . $searchData;
+        //$search = $searchTerm . '=' . $searchData;
         //Reset warnings
         notification::ResetWarning();
 
@@ -124,10 +124,10 @@ class ldap {
                     //Check that search term is VALID
                     if (strstr($search, '=')) {
                         //Do the LDAP dearch on the specified search term
-                        $Returned = @ldap_search($ldapConnection, $this->baseDn, $search);
+                        $Returned = @ldap_search($ldapConnection, $this->baseDn, $search, $filter);
                         if ($Returned) {
                             //Get array of results from the search
-                            $Results = @ldap_get_entries($ldapConnection, $Returned, $filter); //filter 
+                            $Results = @ldap_get_entries($ldapConnection, $Returned); //filter 
                             //Close the LDAP connection   
                             @ldap_close($ldapConnection);
                             return $Results;
