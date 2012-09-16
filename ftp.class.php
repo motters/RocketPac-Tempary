@@ -83,7 +83,7 @@ class ftp extends rocketpack {
     /* Set the Auth type anonymous OR login
      * @Author Sam Mottley
      */
-    private $authType;
+    private $authType = 'login';
 
     /* Set the ftp username 
      * @Author Sam Mottley
@@ -342,7 +342,7 @@ class ftp extends rocketpack {
 
     public function setCurrentDirectory($location) {
 
-        //Here we are going to chnage the current directory
+        //Here we are going to change the current directory
         if (@ftp_chdir($this->storeConnection, $location)) {
             return true;
         } else {
@@ -356,7 +356,7 @@ class ftp extends rocketpack {
      */
 
     public function listFilesInDirectory($directory = '.', $additionPrams = '-la') {
-        // $wasError = array();
+		//attempt to list files in the directory
         $fileArray = ftp_nlist($this->storeConnection, $additionPrams . ' ' . $directory);
         if ($fileArray) {
             return $fileArray;
@@ -381,18 +381,20 @@ class ftp extends rocketpack {
         } else {
             $file = $file;
         }
+		//Run though each file 
         foreach ($file as $singleFile) {
+			//Does the file belong in a different directory than root?
             if (strstr($singleFile, '/')) {
                 $pathInfo = pathinfo($singleFile);
-                $currentLocation = $this->currentDirectory();
-                if ($this->setCurrentDirectory($pathInfo['dirname'])) {
+                $currentLocation = $this->currentDirectory(); // set the current location
+                if ($this->setCurrentDirectory($pathInfo['dirname'])) {//chnage the location to the files location
                     //Attempt to delete file
                     $ftpDelete = ftp_delete($this->storeConnection, $pathInfo['basename']);
                     if (!$ftpDelete) {
                         $wasError[] = $singleFile;
                     }
                 }
-                $this->setCurrentDirectory($currentLocation);
+                $this->setCurrentDirectory($currentLocation);//go back to the directory we were in at the start
             } else {
                 //Attempt to delete file
                 $ftpDelete = ftp_delete($this->storeConnection, $singleFile);
@@ -424,6 +426,7 @@ class ftp extends rocketpack {
         if (!is_array($folder)) {
             $folder = array($folder);
         }
+		//got through each folder
         foreach ($folder as $singleFolder) {
             //Attempt to delete Folder
             $ftpDelete = ftp_rmdir($this->storeConnection, $singleFolder);
@@ -592,13 +595,15 @@ class ftp extends rocketpack {
         if (!is_array($file)) {
             $file = array($file);
         }
+		//go though each file
         foreach ($file as $singlefile) {
+			//attempt to get the information
             $lastModified[$singlefile] = ftp_mdtm($this->storeConnection, $singlefile);
             if (!$lastModified[$singlefile]) {
                 $wasError[] = $singlefile;
             }
         }
-
+		//check for errors
         if (!in_array(false, $lastModified)) {
             return $lastModified;
         } else {
@@ -781,7 +786,7 @@ class ftp extends rocketpack {
      * UNTESTED
      */
 
-    public function ftp_exec($command) {
+    public function ftpExec($command) {
         return ftp_exec($this->storeConnection, $command);
     }
 
@@ -922,7 +927,7 @@ class ftp extends rocketpack {
      * UNTESTED
      */
 
-    public function retrieveFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY, $overWriteSigle = NULL) {
+    public function retrieveFile($fileLocation, $fileServer = NULL, $transferMode = FTP_BINARY) {
         $wasError = '';
 		//turn the information into an array if and array was not given in the first place
         if (!is_array($fileLocation)) {
