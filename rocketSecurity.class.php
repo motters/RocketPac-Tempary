@@ -29,7 +29,7 @@ class rocketSecurity extends rocketpack {
 	 *The below function will clean any xss attck attempts
 	 *@Return clean version of what was input
 	 */
-	public function cleanXss($issue , $htmlEntities = true, $stripTags = true, $urlencode = true, $scan = true){
+	public function cleanXss($issue , $htmlEntities = true, $stripTags = true, $scan = true){
 		$clean = $issue; 
 		//Run through html entities and str_replace stops double encoding and utf-7 
 		if($htmlEntities){
@@ -42,19 +42,7 @@ class rocketSecurity extends rocketpack {
 			//do nothing
 		}else{
 			$clean = strip_tags($clean, $stripTags);	
-		}
-		//This will stop US-ASCII encoding xss attacks
-		if($urlencode != false){
-			 for($i = 0; $i < strlen($clean); $i++){
-				if(strpos("/:@&%=?.#", $clean[$i]) === false){
-					$cleanPart .= urlencode($clean[$i]);
-				}else{
-					$cleanPart .= $clean[$i];
-				}
-			 }
-			 $clean = $cleanPart; 	
-		}
-		
+		}		
 		//here we scan through all possable ways to get through the filter andother DOUBLE CHECK
 		foreach(self::$xssAttacks as $danger){
 			if(strpos($danger, $clean) === true){
