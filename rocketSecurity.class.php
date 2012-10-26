@@ -10,43 +10,23 @@ class rocketSecurity extends rocketpack {
 	static $integerOverflowsAttacks = array('-1','0','0x100','0x1000','0x3fffffff','0x7ffffffe','0x7fffffff','0x80000000','0xfffffffe','0xffffffff','0x10000','0x100000');
 	static $formatStringErrors = array('%s%p%x%d','.1024d','%.2049d','%p%p%p%p','%x%x%x%x','%d%d%d%d','%s%s%s%s','%99999999999s','%08x','%%20d','%%20n','%%20x','%%20s','%s%s%s%s%s%s%s%s%s%s','%p%p%p%p%p%p%p%p%p%p','%#0123456x%08x%x%s%p%d%n%o%u%c%h%l%q%j%z%Z%t%i%e%g%f%a%C%S%08x%%','%s x 129','%x x 257');
 	static $bufferOverFlow = array('A x 5','A x 17','A x 33','A x 65','A x 129','A x 257','A x 513','A x 1024','A x 2049','A x 4097','A x 8193','A x 12288');
-	
+	static $sessionHiJacking;
 	
 	/*############################################
 	##Search for any attacks
 	############################################*/
 	
-	public function checkXss(){
+	public function checkStandardAttacks(){
 		
 		
 	}
-	
-	public function checkSQLInjection(){
-		
-		
-	}
-	
-	public function checkHttpRequest(){
-		
-		
-	}
-	
-	public function checkSessionHiJacking(){
-		
-		
-	}
-	
-	public function checkBufferOverFlow(){
-		
-	}
-	
+
 	
 	/*############################################
 	##Protect against for any attacks
 	############################################*/
 	
 	public function cleanXss($issue , $htmlEntities = true, $stripTags = true, $urlencode = true, $scan = true){
-		$clean = htmlentities(strip_tags($issue));
 		$clean = $issue; 
 		//Run through html entities and str_replace stops double encoding and utf-7 
 		if($htmlEntities){
@@ -73,8 +53,7 @@ class rocketSecurity extends rocketpack {
 		}
 		
 		//here we scan through all possable ways to get through the filter andother DOUBLE CHECK
-		$waysArray = array('<','%3C','&lt','&lt;','&LT','&LT;','&#60','&#060','&#0060','&#00060','&#000060','&#0000060','&#60;','&#060;','&#0060;','&#00060;','&#000060;','&#0000060;','&#x3c','&#x03c','&#x003c','&#x0003c','&#x00003c','&#x000003c','&#x3c;','&#x03c;','&#x003c;','&#x0003c;','&#x00003c;','&#x000003c;','&#X3c','&#X03c','&#X003c','&#X0003c','&#X00003c','&#X000003c','&#X3c;','&#X03c;','&#X003c;','&#X0003c;','&#X00003c;','&#X000003c;','&#x3C','&#x03C','&#x003C','&#x0003C','&#x00003C','&#x000003C','&#x3C;','&#x03C;','&#x003C;','&#x0003C;','&#x00003C;','&#x000003C;','&#X3C','&#X03C','&#X003C','&#X0003C','&#X00003C','&#X000003C','&#X3C;','&#X03C;','&#X003C;','&#X0003C;','&#X00003C;','&#X000003C;','\x3c','\x3C','\u003c','\u003C');
-		foreach($waysArray as $danger){
+		foreach(self::$xssAttacks as $danger){
 			if(strpos($danger, $clean) === true){
 				$clean 	= str_replace($danger, '', $clean);
 			}
@@ -83,7 +62,7 @@ class rocketSecurity extends rocketpack {
 		return $clean;
 	}
 	
-	public function cleanSQLInjection($issue){
+	public function cleanSQL($issue){
 		if(is_array($issue)){
         	return array_map(__METHOD__, $issue);
 		}
@@ -93,8 +72,27 @@ class rocketSecurity extends rocketpack {
 		}
 	}
 	
-	public function cleanHttpRequest(){
+	public function cleanLdap(){
 		
+		
+	}
+	
+	public function cleanXml(){
+		
+		
+	}
+	
+	public function cleanIntegerOverflows(){
+		
+		
+	}
+	
+	public function cleanFormatStringErrors(){
+		
+		
+	}
+	
+	public function cleanXPath(){
 		
 	}
 	
