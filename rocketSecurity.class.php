@@ -4,8 +4,11 @@ class rocketSecurity extends rocketpack{
 	
 	/**
 	 *Below are a list of 100% attacks
+	 *Tags can be added and they are
+	 *{text}, {symbol}, {number}
+	 '||(elt(-{number}+{number},bin({number}),ord({number}),hex(char({number}))))
 	 */
-	static $sqlAttacks = array("'||(elt(-3+5,bin(15),ord(10),hex(char(45))))","||6","'||'6","(||6)","' OR 1=1-- ","OR 1=1","' OR '1'='1","; OR '1'='1'","%22+or+isnull%281%2F0%29+%2F*","%27+OR+%277659%27%3D%277659","%22+or+isnull%281%2F0%29+%2F*","%27+--+","' or 1=1--","\" or 1=1--","' or 1=1 /*","or 1=1--","' or 'a'='a","\" or \"a\"=\"a","') or ('a'='a","Admin' OR '","'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES--",") UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES;","' having 1=1--","' having 1=1--","' group by userid having 1=1--","' SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = tablename')--","' or 1 in (select @@version)--","' union all select @@version--","' OR 'unusual' = 'unusual'","' OR 'something' = 'some'+'thing'","' OR 'text' = N'text'","' OR 'something' like 'some%'","' OR 2 > 1","' OR 'text' > 't'","' OR 'whatever' in ('whatever')","' OR 2 BETWEEN 1 and 3","' or username like char(37);","' union select * from users where login = char(114,111,111,116);","' union select ","Password:*/=1--","UNI/**/ON SEL/**/ECT","'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER'","'; EXEC ('SEL' + 'ECT US' + 'ER')","'/**/OR/**/1/**/=/**/1","' or 1/*","+or+isnull%281%2F0%29+%2F*","%27+OR+%277659%27%3D%277659","%22+or+isnull%281%2F0%29+%2F*","%27+--+&password=","'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > "," @var select @var as var into temp end --","' and 1 in (select var from temp)--","' union select 1,load_file('/etc/passwd'),1,1,1;","1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1;","' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0));","'; exec master..xp_cmdshell 'ping 10.10.1.2'--","CREATE USER name IDENTIFIED BY 'pass123'","CREATE USER name IDENTIFIED BY pass123 TEMPORARY TABLESPACE temp DEFAULT TABLESPACE users;","' ; drop table temp --","exec sp_addlogin 'name' , 'password'","exec sp_addsrvrolemember 'name' , 'sysadmin'","INSERT INTO mysql.user (user, host, password) VALUES ('name', 'localhost', PASSWORD('pass123'))","GRANT CONNECT TO name; GRANT RESOURCE TO name;","INSERT INTO Users(Login, Password, Level) VALUES( char(0x70) + char(0x65) + char(0x74) + char(0x65) + char(0x72) + char(0x70) + char(0x65) + char(0x74) + char(0x65) + char(0x72),char(0x64)", "order by {number}");
+	static $sqlAttacks = array("'||(elt({symbol}{number}{symbol}{number},bin({number}),ord({number}),hex(char({number}))))","||{number}","'||'6","(||6)","' OR 1=1-- ","OR 1=1","' OR '1'='1","; OR '1'='1'","%22+or+isnull%281%2F0%29+%2F*","%27+OR+%277659%27%3D%277659","%22+or+isnull%281%2F0%29+%2F*","%27+--+","' or 1=1--","\" or 1=1--","' or 1=1 /*","or 1=1--","' or 'a'='a","\" or \"a\"=\"a","') or ('a'='a","Admin' OR '","'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES--",") UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES;","' having 1=1--","' having 1=1--","' group by userid having 1=1--","' SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = tablename')--","' or 1 in (select @@version)--","' union all select @@version--","' OR 'unusual' = 'unusual'","' OR 'something' = 'some'+'thing'","' OR 'text' = N'text'","' OR 'something' like 'some%'","' OR 2 > 1","' OR 'text' > 't'","' OR 'whatever' in ('whatever')","' OR 2 BETWEEN 1 and 3","' or username like char(37);","' union select * from users where login = char(114,111,111,116);","' union select ","Password:*/=1--","UNI/**/ON SEL/**/ECT","'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER'","'; EXEC ('SEL' + 'ECT US' + 'ER')","'/**/OR/**/1/**/=/**/1","' or 1/*","+or+isnull%281%2F0%29+%2F*","%27+OR+%277659%27%3D%277659","%22+or+isnull%281%2F0%29+%2F*","%27+--+&password=","'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > "," @var select @var as var into temp end --","' and 1 in (select var from temp)--","' union select 1,load_file('/etc/passwd'),1,1,1;","1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1;","' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0));","'; exec master..xp_cmdshell 'ping 10.10.1.2'--","CREATE USER name IDENTIFIED BY 'pass123'","CREATE USER name IDENTIFIED BY pass123 TEMPORARY TABLESPACE temp DEFAULT TABLESPACE users;","' ; drop table temp --","exec sp_addlogin 'name' , 'password'","exec sp_addsrvrolemember 'name' , 'sysadmin'","INSERT INTO mysql.user (user, host, password) VALUES ('name', 'localhost', PASSWORD('pass123'))","GRANT CONNECT TO name; GRANT RESOURCE TO name;","INSERT INTO Users(Login, Password, Level) VALUES( char(0x70) + char(0x65) + char(0x74) + char(0x65) + char(0x72) + char(0x70) + char(0x65) + char(0x74) + char(0x65) + char(0x72),char(0x64)", "order by {number}");
 	static $xssAttacks =  array('>','"','\'','<script>','<','%3C','&lt','&lt;','&LT','&LT;','&#60','&#060','&#0060','&#00060','&#000060','&#0000060','&#60;','&#060;','&#0060;','&#00060;','&#000060;','&#0000060;','&#x3c','&#x03c','&#x003c','&#x0003c','&#x00003c','&#x000003c','&#x3c;','&#x03c;','&#x003c;','&#x0003c;','&#x00003c;','&#x000003c;','&#X3c','&#X03c','&#X003c','&#X0003c','&#X00003c','&#X000003c','&#X3c;','&#X03c;','&#X003c;','&#X0003c;','&#X00003c;','&#X000003c;','&#x3C','&#x03C','&#x003C','&#x0003C','&#x00003C','&#x000003C','&#x3C;','&#x03C;','&#x003C;','&#x0003C;','&#x00003C;','&#x000003C;','&#X3C','&#X03C','&#X003C','&#X0003C','&#X00003C','&#X000003C','&#X3C;','&#X03C;','&#X003C;','&#X0003C;','&#X00003C;','&#X000003C;','\x3c','\x3C','\u003c','\u003C');
 	static $ldapAttacks = array('|','!','(',')','%28','%29','&','%26','%21','%7C','*|','%2A%7C','*(|(mail=*))','%2A%28%7C%28mail%3D%2A%29%29','*(|(objectclass=*))','%2A%28%7C%28objectclass%3D%2A%29%29','*()|%26\'','admin*','admin*)((|userPassword=*)','*)(uid=*))(|(uid=*');
 	static $xPathAttacks = array("'+or+'1'='1","'+or+''='","x'+or+1=1+or+'x'='y","/","//","//*","*/*","@*","count(/child::node())","x'+or+name()='username'+or+'x'='y",);
@@ -26,15 +29,27 @@ class rocketSecurity extends rocketpack{
 			case 'get':
 				//Here we check for sql attacks
 				foreach(self::$sqlAttacks as $attack){
-					$searchTags = strpos($attack, '{number}');
-					if($searchTags !== false){
-						$clean = preg_quote($attack, '/');
-						$searchPattern = '/'.str_replace('{number}', '\d*', $clean).'/';
-						$search = preg_match($searchPattern, $attack);
+					$noSeach = 0;
+					//here we search for the number and text tag then search using preg match 
+					$searchTagNumber = strpos($attack, '{number}');
+					$searchTagText = strpos($attack, '{text}');
+					if(($searchTagNumber !== false) || ($searchTagText !== false)){
+						$searchPatternStarter = preg_quote($attack, '/');
+						$searchPattern = $searchPatternStarter;
+						$searchPattern = str_replace('\{text\}', '\w*', $searchPattern);
+						$searchPattern = str_replace('\{number\}', '\d*', $searchPattern);
+						$searchPattern = str_replace('\{symbol\}', '\W*', $searchPattern);
+						echo $searchPattern . ' = '. $data . '<br/>';
+						$search = preg_match("/".$searchPattern."\s*\w*/", $data);
 						if($search){
 							$Issues[$param]['sqlAttack'][] = $attack;
 						}
 					}else{
+						$noSeach = 1;//If no tag found then there was no search 	
+					}
+					
+					//No tags found so run a quick simple search
+					if($noSeach == 1){
 						$search = strpos($data, $attack);
 						if($search !== false){
 							$Issues[$param]['sqlAttack'][] = $attack;
@@ -181,8 +196,11 @@ class rocketSecurity extends rocketpack{
 				case 'get':
 					foreach($_GET as $name => $value){
 						$result = $this->checkStandardAttacks($value, 'get', $settings['defendMethod']);
+						
 						print_r($result);
+						echo '<br/>';
 					}
+					
 				break;
 				
 			}
