@@ -1,6 +1,6 @@
 <?php
 
-class rocketSecurity extends rocketpack {
+class rocketSecurity extends rocketpack{
 	
 	/**
 	 *Below are a list of very common attacks 
@@ -12,16 +12,27 @@ class rocketSecurity extends rocketpack {
 	static $xmlInjection = array("<![CDATA[<script>var n=0;while(true){n++;}</script>]]>","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><foo><![CDATA[<]]>SCRIPT<![CDATA[>]]>alert('gotcha');<![CDATA[<]]>/SCRIPT<![CDATA[>]]></foo>","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><foo><![CDATA[' or 1=1 or ''=']]></foof>","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM \"file://c:/boot.ini\">]><foo>&xee;</foo>","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><foo>&xee;</foo>","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM \"file:///etc/shadow\">]><foo>&xee;</foo>","<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><!DOCTYPE foo [<!ELEMENT foo ANY><!ENTITY xxe SYSTEM \"file:///dev/random\">]><foo>&xee;</foo>");
 	static $integerOverflowsAttacks = array('-1','0','0x100','0x1000','0x3fffffff','0x7ffffffe','0x7fffffff','0x80000000','0xfffffffe','0xffffffff','0x10000','0x100000');
 	static $formatStringErrors = array('%s%p%x%d','.1024d','%.2049d','%p%p%p%p','%x%x%x%x','%d%d%d%d','%s%s%s%s','%99999999999s','%08x','%%20d','%%20n','%%20x','%%20s','%s%s%s%s%s%s%s%s%s%s','%p%p%p%p%p%p%p%p%p%p','%#0123456x%08x%x%s%p%d%n%o%u%c%h%l%q%j%z%Z%t%i%e%g%f%a%C%S%08x%%','%s x 129','%x x 257');
-	static $bufferOverFlow = array('A x 5','A x 17','A x 33','A x 65','A x 129','A x 257','A x 513','A x 1024','A x 2049','A x 4097','A x 8193','A x 12288');
+	static $bufferOverflowsAttacks = array('A x 5','A x 17','A x 33','A x 65','A x 129','A x 257','A x 513','A x 1024','A x 2049','A x 4097','A x 8193','A x 12288');
 	static $sessionHiJacking;
 	
 	/**
 	 *This will search the common attack paramiters
 	 *@Return This will return an array of found vunrabilities 
 	 */
-	public function checkStandardAttacks(){
+	public function checkStandardAttacks($data, $param, $defendMethod){
+		$Issues[$param] = array();
 		
-		
+		switch($param){
+			case 'get':
+				foreach(self::$sqlAttacks as $attack){
+					if(preg_match('/\b('.$attack.')\b/i',$data)){
+						$Issues[$param]['sqlAttack'][] = $attack;
+					}
+				}
+			break;
+				
+		}
+		return $Issues;
 	}
 
 	
@@ -57,10 +68,6 @@ class rocketSecurity extends rocketpack {
 	 *The below will clean up any sql attacks
 	 */
 	public function cleanSQL($issue){
-		if(is_array($issue)){
-        	return array_map(__METHOD__, $issue);
-		}
-		
 		if(!empty($issue) && is_string($issue)) {
 			return str_replace(array('\\', "\0", "\n", "\r", "'", '"', "\x1a"), array('\\\\', '\\0', '\\n', '\\r', "\\'", '\\"', '\\Z'), $issue);
 		}
@@ -69,9 +76,14 @@ class rocketSecurity extends rocketpack {
 	/**
 	 *The below will clean up any LDAP attacks
 	 */
-	public function cleanLdap(){
-		
-		
+	public function cleanLdap($issue){
+		//here we scan through all possable ways to inject LDAP
+		foreach(self::$ldapAttacks as $danger){
+			if(strpos($danger, $clean) === true){
+				$clean 	= str_replace($danger, '', $clean);
+			}
+		}
+		return $clean;
 	}
 	
 	/**
@@ -139,12 +151,21 @@ class rocketSecurity extends rocketpack {
 		
 	}
 	
-	
+
 	/**
 	 *The below is load function to search for attack, log attacks and get up safe varables to use in rocketpack
 	 */	
-	public function rocketSecurity(){
-		
+	public function rocketSecurityBrain($settings){
+		foreach(explode(',', $settings['defendAgainst']) as $setting){
+			switch($setting){
+				case 'get':
+					$getData = 'username=admin OR 1=1';
+					$result = $this->checkStandardAttacks($getData, 'get', $settings['defendMethod']);
+					print_r($result);
+				break;
+				
+			}
+		}
 		
 	}
 	
